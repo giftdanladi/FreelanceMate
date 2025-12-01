@@ -1,50 +1,52 @@
-# Welcome to your Expo app 👋
+# 📱 FreelanceMate  
+**AI-powered mobile app for UK freelancers to create invoices, track expenses, manage clients, and generate professional messages.**  
+Built with **React Native (Expo)** and styled using **Tailwind CSS** for rapid development.
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+---
 
-## Get started
+## 🚀 Features
 
-1. Install dependencies
+### 🧾 Invoicing  
+- Create, edit, and send professional invoices.  
+- Auto-generate invoice numbers.  
+- Support for UK-friendly formats (GBP, date formats, VAT options).  
+- Export invoices as PDF.
 
-   ```bash
-   npm install
-   ```
+### 💼 Client Management  
+- Add and manage client profiles.  
+- Store contact details, rates, and notes.  
+- View client-specific invoice history.
 
-2. Start the app
+### 💸 Expense Tracking  
+- Log daily business expenses.  
+- Categorize and filter by date, category, or client/project.  
+- Visual overview of spending trends.
 
-   ```bash
-   npx expo start
-   ```
+### 🤖 AI Assistance  
+- Generate invoice descriptions using AI.  
+- Auto-compose professional client messages.  
+- Smart suggestions for overdue reminders, quotes, and follow-ups.
 
-In the output, you'll find options to open the app in a
+---
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+## 🛠️ Tech Stack
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+- **React Native (Expo)**
+- **Tailwind CSS (NativeWind)**
+- **TypeScript**
+- **PDF Generation Tools (e.g., expo-print, expo-sharing)**  
+- **Backend (optional)**: Firebase  
+- **AI Integration**: genai
 
-## Get a fresh project
+---
 
-When you're ready, run:
+## 📦 Installation
+
+Make sure you have **Node.js**, **Yarn or npm**, and **Expo CLI** installed.
 
 ```bash
-npm run reset-project
-```
-
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
-
-## Learn more
-
-To learn more about developing your project with Expo, look at the following resources:
-
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
-
-## Join the community
-
-Join our community of developers creating universal apps.
-
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+git clone
+cd freelancemate
+npm install
+# or
+yarn install
