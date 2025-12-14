@@ -11,9 +11,7 @@ import {
   ScrollView,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import DateTimePicker, {
-  DateTimePickerEvent,
-} from "@react-native-community/datetimepicker";
+import DateTimePickerModal from "react-native-modal-datetime-picker";
 import { useEffect, useState } from "react";
 import { addExpense } from "@/util/firestore";
 import { IUser } from "@/interface";
@@ -24,12 +22,11 @@ export default function Page() {
   const [inputs, setInputs] = useState<Record<any, any>>({});
   const [user, setUser] = useState<IUser>();
   const [loading, setLoading] = useState<boolean>(false);
+  const [showDatePicker, setShowDatePicker] = useState<boolean>(false);
 
-  const onChange = (event: DateTimePickerEvent, selectedDate?: Date) => {
-    if (selectedDate) {
-      setDate(selectedDate);
-      setInputs({ ...inputs, date: selectedDate });
-    }
+  const confirm = (selectedDate: Date) => {
+    setShowDatePicker(false);
+    setDate(selectedDate);
   };
 
   const handleSubmit = async () => {
@@ -73,14 +70,14 @@ export default function Page() {
       {/*Inputs*/}
       <ScrollView className="my-2 flex-col">
         <TextInput
-          className="border-[1px] border-gray-300 mb-3 bg-white rounded-2xl p-5 focus:border-sky-500 font-medium placeholder:text-gray-500"
+          className="border-[1px] border-gray-300 mb-3 bg-white rounded-2xl p-5 focus:border-sky-500 font-medium placeholder:text-gray-500 dark:text-black"
           placeholder="Category"
           autoCorrect={false}
           onChangeText={(e) => setInputs({ ...inputs, category: e })}
         />
 
         <TextInput
-          className="border-[1px] border-gray-300 mb-3 bg-white rounded-2xl p-5 focus:border-sky-500 font-medium placeholder:text-gray-500"
+          className="border-[1px] border-gray-300 mb-3 bg-white rounded-2xl p-5 focus:border-sky-500 font-medium placeholder:text-gray-500 dark:text-black"
           placeholder="Amount"
           onChangeText={(e) => setInputs({ ...inputs, amount: e })}
           autoCorrect={false}
@@ -89,20 +86,26 @@ export default function Page() {
 
         <View className="gap-2">
           <Text className="text-gray-800">Date</Text>
-          <View className="border-[1px] border-gray-300 mb-3 bg-white rounded-2xl p-3 font-medium">
-            <DateTimePicker
-              testID="dateTimePicker"
-              value={date}
-              mode="date"
-              is24Hour={true}
-              display="default"
-              onChange={onChange}
-            />
+          <View className="border-[1px] border-gray-300 mb-3 bg-white rounded-2xl p-5 font-medium">
+            {showDatePicker && (
+              <DateTimePickerModal
+                isVisible={showDatePicker}
+                mode="date"
+                date={date}
+                onConfirm={confirm}
+                onCancel={() => setShowDatePicker(false)}
+              />
+            )}
+            {!showDatePicker && (
+              <TouchableOpacity onPress={() => setShowDatePicker(true)}>
+                <Text>{date.toLocaleDateString()}</Text>
+              </TouchableOpacity>
+            )}
           </View>
         </View>
 
         <TextInput
-          className="border-[1px] border-gray-300 mb-3 bg-white rounded-2xl p-5 focus:border-sky-500 font-medium h-40 placeholder:text-gray-500"
+          className="border-[1px] border-gray-300 mb-3 bg-white rounded-2xl p-5 focus:border-sky-500 font-medium h-40 placeholder:text-gray-500 dark:text-black"
           placeholder="Description"
           onChangeText={(e) => setInputs({ ...inputs, description: e })}
           multiline

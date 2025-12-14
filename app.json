@@ -2,16 +2,18 @@
   "expo": {
     "name": "FreelanceMate",
     "slug": "freelanceMate",
-    "version": "1.0.0",
+    "version": "1.0.4",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "freelancemate",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.giftdanladi.freelancemate"
     },
     "android": {
+      "versionCode": 4,
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
@@ -47,7 +49,11 @@
       "reactCompiler": true
     },
     "extra": {
-      "GENAI_API_KEY": "AIzaSyCoJlexTfRs9B38-bS8w9pVPx-Sh8M8AfU"
+      "GENAI_API_KEY": "AIzaSyCoJlexTfRs9B38-bS8w9pVPx-Sh8M8AfU",
+      "router": {},
+      "eas": {
+        "projectId": "e4b57b08-d9f6-44f4-b2f3-c21d3ebfadfc"
+      }
     }
   }
 }

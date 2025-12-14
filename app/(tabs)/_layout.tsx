@@ -9,7 +9,8 @@ export default function TabLayout() {
         tabBarStyle: {
           position: "absolute",
           borderRadius: 100,
-          paddingTop: 10,
+          height: 80,
+          paddingTop: 5,
         },
       }}
     >

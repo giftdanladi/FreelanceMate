@@ -9,11 +9,11 @@ import {
   Alert,
   ActivityIndicator,
   ScrollView,
+  KeyboardAvoidingView,
+  Platform,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import DateTimePicker, {
-  DateTimePickerEvent,
-} from "@react-native-community/datetimepicker";
+import DateTimePickerModal from "react-native-modal-datetime-picker";
 import { useEffect, useState } from "react";
 import { addInvoice } from "@/util/firestore";
 import generateCode from "@/util/generateInvoice";
@@ -25,12 +25,11 @@ export default function Page() {
   const [inputs, setInputs] = useState<Record<any, any>>({});
   const [user, setUser] = useState<IUser>();
   const [loading, setLoading] = useState<boolean>(false);
+  const [showDatePicker, setShowDatePicker] = useState<boolean>(false);
 
-  const onChange = (event: DateTimePickerEvent, selectedDate?: Date) => {
-    if (selectedDate) {
-      setDate(selectedDate);
-      setInputs({ ...inputs, dueDate: selectedDate });
-    }
+  const confirm = (selectedDate: Date) => {
+    setShowDatePicker(false);
+    setDate(selectedDate);
   };
 
   const handleSubmit = async () => {
@@ -67,106 +66,117 @@ export default function Page() {
 
   return (
     <SafeAreaView className="p-5 h-full">
-      <Text
-        className="text-2xl"
-        style={{ fontFamily: FontFamily.bricolageBold }}
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        keyboardVerticalOffset={50}
       >
-        Create Invoice
-      </Text>
+        <Text
+          className="text-2xl"
+          style={{ fontFamily: FontFamily.bricolageBold }}
+        >
+          Create Invoice
+        </Text>
 
-      {/*Inputs*/}
-      <ScrollView className="my-2 flex-col">
-        <TextInput
-          className="border-[1px] border-gray-300 mb-3 bg-white rounded-2xl p-5 focus:border-sky-500 font-medium placeholder:text-gray-500"
-          placeholder="Client Name"
-          onChangeText={(e) => setInputs({ ...inputs, clientName: e })}
-          autoCorrect={false}
-          autoFocus
-        />
-
-        <TextInput
-          className="border-[1px] border-gray-300 mb-3 bg-white rounded-2xl p-5 focus:border-sky-500 font-medium placeholder:text-gray-500"
-          placeholder="Client Email"
-          keyboardType="email-address"
-          autoCapitalize="none"
-          autoCorrect={false}
-          onChangeText={(e) => setInputs({ ...inputs, clientEmail: e })}
-        />
-
-        <View className="w-full flex-row gap-3">
+        {/*Inputs*/}
+        <ScrollView className="my-2 flex-col">
           <TextInput
-            className="flex-1 border-[1px] border-gray-300 mb-3 bg-white rounded-2xl p-5 focus:border-sky-500 font-medium placeholder:text-gray-500"
-            placeholder="Amount"
-            onChangeText={(e) => setInputs({ ...inputs, amount: e })}
+            className="border-[1px] border-gray-300 mb-3 bg-white rounded-2xl p-5 focus:border-sky-500 font-medium placeholder:text-gray-500 dark:text-black"
+            placeholder="Client Name"
+            onChangeText={(e) => setInputs({ ...inputs, clientName: e })}
             autoCorrect={false}
-            keyboardType="numbers-and-punctuation"
+            autoFocus
           />
 
           <TextInput
-            className="flex-1 border-[1px] border-gray-300 mb-3 bg-white rounded-2xl p-5 focus:border-sky-500 font-medium placeholder:text-gray-500"
-            placeholder="Tax"
-            onChangeText={(e) => setInputs({ ...inputs, tax: e })}
+            className="border-[1px] border-gray-300 mb-3 bg-white rounded-2xl p-5 focus:border-sky-500 font-medium placeholder:text-gray-500 dark:text-black"
+            placeholder="Client Email"
+            keyboardType="email-address"
+            autoCapitalize="none"
             autoCorrect={false}
-            keyboardType="numbers-and-punctuation"
+            onChangeText={(e) => setInputs({ ...inputs, clientEmail: e })}
           />
-        </View>
 
-        <TextInput
-          className="border-[1px] border-gray-300 mb-3 bg-white rounded-2xl p-5 focus:border-sky-500 font-medium placeholder:text-gray-500"
-          placeholder="Total"
-          keyboardType="numbers-and-punctuation"
-          autoCorrect={false}
-          onChangeText={(e) => setInputs({ ...inputs, total: e })}
-        />
+          <View className="w-full flex-row gap-3">
+            <TextInput
+              className="flex-1 border-[1px] border-gray-300 mb-3 bg-white rounded-2xl p-5 focus:border-sky-500 font-medium placeholder:text-gray-500 dark:text-black"
+              placeholder="Amount"
+              onChangeText={(e) => setInputs({ ...inputs, amount: e })}
+              autoCorrect={false}
+              keyboardType="numbers-and-punctuation"
+            />
 
-        <View className="gap-2">
-          <Text className="text-gray-800">Due Date</Text>
-          <View className="border-[1px] border-gray-300 mb-3 bg-white rounded-2xl p-3 font-medium">
-            <DateTimePicker
-              testID="dateTimePicker"
-              value={date}
-              mode="date"
-              is24Hour={true}
-              display="default"
-              onChange={onChange}
+            <TextInput
+              className="flex-1 border-[1px] border-gray-300 mb-3 bg-white rounded-2xl p-5 focus:border-sky-500 font-medium placeholder:text-gray-500 dark:text-black"
+              placeholder="Tax"
+              onChangeText={(e) => setInputs({ ...inputs, tax: e })}
+              autoCorrect={false}
+              keyboardType="numbers-and-punctuation"
             />
           </View>
-        </View>
 
-        <TextInput
-          className="border-[1px] border-gray-300 mb-3 bg-white rounded-2xl p-5 focus:border-sky-500 font-medium placeholder:text-gray-500"
-          placeholder="Items purchased (seperate with commas)"
-          onChangeText={(e) => setInputs({ ...inputs, items: e })}
-          autoCorrect={false}
-          autoCapitalize="none"
-        />
+          <TextInput
+            className="border-[1px] border-gray-300 mb-3 bg-white rounded-2xl p-5 focus:border-sky-500 font-medium placeholder:text-gray-500 dark:text-black"
+            placeholder="Total"
+            keyboardType="numbers-and-punctuation"
+            autoCorrect={false}
+            onChangeText={(e) => setInputs({ ...inputs, total: e })}
+          />
 
-        <TextInput
-          className="border-[1px] border-gray-300 mb-3 bg-white rounded-2xl p-5 focus:border-sky-500 font-medium placeholder:text-gray-500 h-40"
-          placeholder="Note"
-          onChangeText={(e) => setInputs({ ...inputs, note: e })}
-          multiline
-        />
-
-        <TouchableOpacity
-          className="w-full bg-sky-600 p-5 items-center rounded-2xl"
-          style={styles.glassContainer}
-          onPress={handleSubmit}
-        >
-          {loading ? (
-            <View className="flex-row gap-2">
-              <ActivityIndicator />
-              <Text className="text-sky-600 text-lg font-medium">
-                Creating...
-              </Text>
+          <View className="gap-2">
+            <Text className="text-gray-800">Date</Text>
+            <View className="border-[1px] border-gray-300 mb-3 bg-white rounded-2xl p-5 font-medium">
+              {showDatePicker && (
+                <DateTimePickerModal
+                  isVisible={showDatePicker}
+                  mode="date"
+                  date={date}
+                  onConfirm={confirm}
+                  onCancel={() => setShowDatePicker(false)}
+                />
+              )}
+              {!showDatePicker && (
+                <TouchableOpacity onPress={() => setShowDatePicker(true)}>
+                  <Text>{date.toLocaleDateString()}</Text>
+                </TouchableOpacity>
+              )}
             </View>
-          ) : (
-            <Text className="text-sky-600 text-lg font-bold">
-              Create invoice
-            </Text>
-          )}
-        </TouchableOpacity>
-      </ScrollView>
+          </View>
+
+          <TextInput
+            className="border-[1px] border-gray-300 mb-3 bg-white rounded-2xl p-5 focus:border-sky-500 font-medium placeholder:text-gray-500 dark:text-black"
+            placeholder="Items purchased (seperate with commas)"
+            onChangeText={(e) => setInputs({ ...inputs, items: e })}
+            autoCorrect={false}
+            autoCapitalize="none"
+          />
+
+          <TextInput
+            className="border-[1px] border-gray-300 mb-3 bg-white rounded-2xl p-5 focus:border-sky-500 font-medium placeholder:text-gray-500 h-40 dark:text-black"
+            placeholder="Note"
+            onChangeText={(e) => setInputs({ ...inputs, note: e })}
+            multiline
+          />
+
+          <TouchableOpacity
+            className="w-full bg-sky-600 p-5 items-center rounded-2xl"
+            style={styles.glassContainer}
+            onPress={handleSubmit}
+          >
+            {loading ? (
+              <View className="flex-row gap-2">
+                <ActivityIndicator />
+                <Text className="text-sky-600 text-lg font-medium">
+                  Creating...
+                </Text>
+              </View>
+            ) : (
+              <Text className="text-sky-600 text-lg font-bold">
+                Create invoice
+              </Text>
+            )}
+          </TouchableOpacity>
+        </ScrollView>
+      </KeyboardAvoidingView>
       <StatusBar style="dark" />
     </SafeAreaView>
   );
