@@ -1,21 +1,21 @@
-import { FontFamily } from "@/util/FontFamily";
+import { IUser } from "@/interface";
+import { addExpense } from "@/util/firestore";
+import { readData } from "@/util/storage";
+import { Link, useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
+import { useEffect, useState } from "react";
 import {
+  ActivityIndicator,
+  Alert,
+  ScrollView,
+  StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
   View,
-  StyleSheet,
-  Alert,
-  ActivityIndicator,
-  ScrollView,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
 import DateTimePickerModal from "react-native-modal-datetime-picker";
-import { useEffect, useState } from "react";
-import { addExpense } from "@/util/firestore";
-import { IUser } from "@/interface";
-import { readData } from "@/util/storage";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function Page() {
   const [date, setDate] = useState<Date>(new Date());
@@ -23,6 +23,7 @@ export default function Page() {
   const [user, setUser] = useState<IUser>();
   const [loading, setLoading] = useState<boolean>(false);
   const [showDatePicker, setShowDatePicker] = useState<boolean>(false);
+  const router = useRouter()
 
   const confirm = (selectedDate: Date) => {
     setShowDatePicker(false);
@@ -42,6 +43,7 @@ export default function Page() {
       const res = await addExpense(inputs);
       if (res.success) {
         Alert.alert("Notification", "Expense Created");
+        router.replace("/expenses")
       } else {
         Alert.alert("Notification", res.message);
       }
@@ -68,7 +70,7 @@ export default function Page() {
       </Text>*/}
 
       {/*Inputs*/}
-      <ScrollView className="my-2 flex-col">
+      <ScrollView className="my-2 flex-col" showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 20, minHeight: '100%' }}>
         <TextInput
           className="border-[1px] border-gray-300 mb-3 bg-white rounded-2xl p-5 focus:border-sky-500 font-medium placeholder:text-gray-500 dark:text-black"
           placeholder="Category"
@@ -127,9 +129,10 @@ export default function Page() {
             <Text className="text-sky-600 text-lg font-bold">Add expense</Text>
           )}
         </TouchableOpacity>
-        <TouchableOpacity className="my-5 items-center bg-white p-4 mx-20 rounded-full">
-          <Text className="text-sky-500 font-medium">View all expenses</Text>
-        </TouchableOpacity>
+        <Link href={'/expenses'} asChild>
+          <TouchableOpacity className="my-5 items-center bg-white p-4 mx-20 rounded-full">
+            <Text className="text-sky-500 font-medium">View all expenses</Text>
+          </TouchableOpacity></Link>
       </ScrollView>
       <StatusBar style="dark" />
     </SafeAreaView>

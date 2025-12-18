@@ -1,8 +1,9 @@
+import { IExpense, IInvoice } from "@/interface";
 import { FontFamily } from "@/util/FontFamily";
 import { Ionicons } from "@expo/vector-icons";
-import { Text, View } from "react-native";
 import { Image } from "expo-image";
-import { IExpense, IInvoice } from "@/interface";
+import { Link } from "expo-router";
+import { Text, TouchableOpacity, View } from "react-native";
 
 interface IProp {
   invoice: IInvoice[];
@@ -20,6 +21,16 @@ export default function Hero({ invoice, expenses }: IProp) {
     return total;
   };
 
+  const getOverdue = () => {
+    let total = 0;
+    invoice
+      .filter((inv) => inv.status === "overdue")
+      .map((e) => {
+        total += +e.total;
+      });
+    return total;
+  };
+
   const getExpense = () => {
     let total = 0;
     expenses.map((e) => {
@@ -30,7 +41,7 @@ export default function Hero({ invoice, expenses }: IProp) {
 
   return (
     <>
-      <View className="bg-sky-600 pt-24 pb-10 rounded-b-[26px] px-5">
+      <View className="bg-sky-600 pt-16 pb-10 rounded-b-[26px] px-5">
         <View className="flex-row justify-between">
           <Image
             source={require("@/assets/images/logo.png")}
@@ -44,10 +55,12 @@ export default function Hero({ invoice, expenses }: IProp) {
           >
             FreelanceMate
           </Text>*/}
-          <View className="flex-row gap-4 items-center">
-            <Ionicons name="pie-chart-outline" size={30} color={"white"} />
-            {/*<Ionicons name="search-outline" size={23} color={"white"} />*/}
-          </View>
+          <Link href={"/chat"} asChild>
+            <TouchableOpacity className="flex-row gap-1 items-center">
+              <Text className="text-white">Let's Chat</Text>
+              <Ionicons name="chatbubbles-outline" size={20} color={"white"} />
+            </TouchableOpacity>
+          </Link>
         </View>
         {/* Data View */}
         <View className="mt-8 flex-row justify-between">
@@ -59,7 +72,7 @@ export default function Hero({ invoice, expenses }: IProp) {
             >
               {invoice.length.toLocaleString()}
             </Text>
-            <Text className="text-white">All invoice</Text>
+            <Text className="text-white">All invoices</Text>
           </View>
 
           <View className="flex-col items-center">
@@ -72,15 +85,17 @@ export default function Hero({ invoice, expenses }: IProp) {
             <Text className="text-white">Income</Text>
           </View>
 
-          <View className="flex-col items-center">
-            <Text
-              className="font-bold text-3xl text-white"
-              style={{ fontFamily: FontFamily.bricolage }}
-            >
-              {getExpense().toLocaleString()}
-            </Text>
-            <Text className="text-white">Expenses</Text>
-          </View>
+          <Link href="/overdue" className="flex-col items-center" asChild>
+            <TouchableOpacity>
+              <Text
+                className="font-bold text-3xl text-white"
+                style={{ fontFamily: FontFamily.bricolage }}
+              >
+                {getOverdue().toLocaleString()}
+              </Text>
+              <Text className="text-white">Overdue</Text>
+            </TouchableOpacity>
+          </Link>
         </View>
       </View>
     </>

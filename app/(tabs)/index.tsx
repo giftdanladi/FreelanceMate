@@ -34,7 +34,6 @@ export default function Page() {
   const fetchInvoice = async () => {
     try {
       const res = await getAllInvoice();
-      // console.log(res);
       if (res.success) {
         setInvoices(res.data);
       }

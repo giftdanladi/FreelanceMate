@@ -17,7 +17,11 @@ export default function RootLayout() {
     <Stack>
       <Stack.Screen name="index" options={{ headerShown: false }} />
       <Stack.Screen name="register" options={{ headerShown: false }} />
-      <Stack.Screen name="chat" options={{ title: "Chat with AI" }} />
+      <Stack.Screen name="chat" options={{ title: "Mate AI" }} />
+      <Stack.Screen
+        name="overdue"
+        options={{ title: "Overdue invoices", headerShown: false }}
+      />
       <Stack.Screen
         name="(tabs)"
         options={{ headerShown: false, title: "Profile" }}
@@ -25,6 +29,11 @@ export default function RootLayout() {
       <Stack.Screen
         name="add-expense"
         options={{ presentation: "modal", headerTitle: "Add Expense" }}
+      />
+
+      <Stack.Screen
+        name="expenses"
+        options={{ headerShown: false }}
       />
 
       <Stack.Screen

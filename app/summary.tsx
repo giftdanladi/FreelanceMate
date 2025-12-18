@@ -1,24 +1,24 @@
 import { FontFamily } from "@/util/FontFamily";
 import { Ionicons } from "@expo/vector-icons";
-import { useLocalSearchParams } from "expo-router";
 import * as Print from "expo-print";
+import { useLocalSearchParams } from "expo-router";
 // import FileSystem from "expo-file-system";
+import { IInvoice, IUser } from "@/interface";
+import { updateInvoiceStatus } from "@/util/firestore";
+import generateInvoiceHTML from "@/util/GenerateInvoiceHTML";
+import { readData } from "@/util/storage";
 import { shareAsync } from "expo-sharing";
+import moment from "moment";
+import { useEffect, useState } from "react";
 import {
+  ActivityIndicator,
+  // Share,
+  Alert,
   ScrollView,
   Text,
   TouchableOpacity,
   View,
-  // Share,
-  Alert,
-  ActivityIndicator,
 } from "react-native";
-import generateInvoiceHTML from "@/util/GenerateInvoiceHTML";
-import { IInvoice, IUser } from "@/interface";
-import { useEffect, useState } from "react";
-import moment from "moment";
-import { updateInvoiceStatus } from "@/util/firestore";
-import { readData } from "@/util/storage";
 
 export default function Summary() {
   const { data } = useLocalSearchParams<{ data: string }>();
@@ -87,7 +87,7 @@ export default function Summary() {
   }
 
   return (
-    <ScrollView>
+    <ScrollView contentContainerStyle={{ paddingBottom: 50 }}>
       <View className="flex-row ml-5 mt-5 gap-3 items-center">
         <Ionicons name="receipt-outline" size={30} />
         <Text className="font-bold text-2xl">{client.invoiceNumber}</Text>
@@ -110,12 +110,12 @@ export default function Summary() {
           </Text>
         </View>
 
-        <View className="flex-row justify-between items-center">
+        {/* <View className="flex-row justify-between items-center">
           <Text className="font-medium text-lg">Tax:</Text>
           <Text className="font-medium text-lg">
             £{Intl.NumberFormat().format(+client.tax)}.00
           </Text>
-        </View>
+        </View> */}
 
         <View className="flex-row justify-between items-center">
           <Text className="font-medium text-lg">Total:</Text>
@@ -133,15 +133,46 @@ export default function Summary() {
           </Text>
         </View>
 
-        {/*<View className="">
-          <Text className="font-medium text-lg">Description:</Text>
-          <Text className="font-medium">
-            The app is intended to help freelancers and small business owners in
-            the UK manage their administrative tasks such as creating invoices,
-            tracking expenses, and generating professional client messages with
-            the help of AI.
+        {/* Items Section */}
+        <View className="bg-white p-5 rounded-2xl">
+          <Text
+            className="font-bold text-lg mb-3"
+            style={{ fontFamily: FontFamily.bricolageBold }}
+          >
+            Items:
           </Text>
-        </View>*/}
+          {(() => {
+            try {
+              // Try to parse as JSON (new format with prices)
+              const items = JSON.parse(client.items);
+              return items.map(
+                (item: { name: string; price: number }, index: number) => (
+                  <View
+                    key={index}
+                    className="flex-row justify-between items-center py-2 border-b border-gray-200"
+                  >
+                    <Text className="font-medium flex-1">{item.name}</Text>
+                    <Text className="font-medium">
+                      £{item.price.toFixed(2)}
+                    </Text>
+                  </View>
+                ),
+              );
+            } catch {
+              // Fallback to old format (comma-separated names)
+              return client.items
+                .split(",")
+                .map((item: string, index: number) => (
+                  <View
+                    key={index}
+                    className="flex-row justify-between items-center py-2 border-b border-gray-200"
+                  >
+                    <Text className="font-medium flex-1">{item.trim()}</Text>
+                  </View>
+                ));
+            }
+          })()}
+        </View>
 
         <View className="bg-white p-5 rounded-2xl">
           <Text className="font-bold text-lg">Note:</Text>

@@ -1,5 +1,5 @@
 import { db } from "@/firebaseConfig";
-import { IUser } from "@/interface";
+import { IExpense, IInvoice, IUser } from "@/interface";
 import {
   addDoc,
   collection,
@@ -9,7 +9,7 @@ import {
   query,
   serverTimestamp,
   updateDoc,
-  where,
+  where
 } from "firebase/firestore";
 import { readData } from "./storage";
 
@@ -122,6 +122,44 @@ export const getAllInvoice = async () => {
   }
 };
 
+export const getInvoiceStats = async () => {
+  const user: IUser = await readData("user");
+  try {
+    const q = query(
+      invoiceRef,
+      where("userId", "==", user.id as string),
+      orderBy("createdAt", "desc"),
+    );
+
+    const snapshot = await getDocs(q);
+    const invoices: IInvoice[] = [];
+
+    snapshot.forEach((doc) => {
+      invoices.push({ id: doc.id, ...(doc.data() as IInvoice) });
+    });
+
+    const total = invoices.length;
+    const paid = invoices.filter((inv) => inv.status === "paid").length;
+    const pending = invoices.filter((inv) => inv.status === "pending").length;
+    const overdue = invoices.filter((inv) => inv.status === "overdue").length;
+
+    return {
+      success: true,
+      data: {
+        total,
+        paid,
+        pending,
+        overdue,
+      },
+    };
+  } catch (error) {
+    return {
+      success: false,
+      message: error,
+    };
+  }
+};
+
 export const addInvoice = async (data: any) => {
   try {
     await addDoc(invoiceRef, {
@@ -186,6 +224,54 @@ export const getAllExpenses = async () => {
     return {
       success: true,
       data,
+    };
+  } catch (error) {
+    return {
+      success: false,
+      message: error,
+    };
+  }
+};
+
+export const getExpenseStats = async () => {
+  const user: IUser = await readData("user");
+  try {
+    const q = query(
+      expenseRef,
+      where("userId", "==", user.id),
+      orderBy("createdAt", "desc"),
+    );
+
+    const snapshot = await getDocs(q);
+    const expenses: IExpense[] = [];
+
+    snapshot.forEach((doc) => {
+      expenses.push({ id: doc.id, ...(doc.data() as IExpense) });
+    });
+
+    const total = expenses.length;
+    const totalAmount = expenses.reduce(
+      (sum, exp) => sum + Number(exp.amount || 0),
+      0,
+    );
+
+    const byCategory: Record<string, number> = {};
+    expenses.forEach((exp) => {
+      const category = exp.category || "Uncategorized";
+      const amount = Number(exp.amount || 0);
+      if (!byCategory[category]) {
+        byCategory[category] = 0;
+      }
+      byCategory[category] += amount;
+    });
+
+    return {
+      success: true,
+      data: {
+        total,
+        totalAmount,
+        byCategory,
+      },
     };
   } catch (error) {
     return {
@@ -264,6 +350,69 @@ export const getAllConversations = async () => {
     return {
       success: true,
       data,
+    };
+  } catch (error) {
+    return {
+      success: false,
+      message: error,
+    };
+  }
+};
+
+export const getSalesStatsThisMonth = async () => {
+  const user: IUser = await readData("user");
+
+  try {
+    const q = query(
+      invoiceRef,
+      where("userId", "==", user.id),
+      orderBy("createdAt", "desc"),
+    );
+
+    const snapshot = await getDocs(q);
+    const invoices: IInvoice[] = [];
+
+    snapshot.forEach((doc) => {
+      invoices.push({ id: doc.id, ...(doc.data() as IInvoice) });
+    });
+
+    const now = new Date();
+    const currentMonth = now.getMonth();
+    const currentYear = now.getFullYear();
+
+    const paidThisMonth = invoices.filter((inv) => {
+      if (inv.status !== "paid") return false;
+
+      const createdAt =
+        inv.createdAt instanceof Date
+          ? inv.createdAt
+          : inv.createdAt?.toDate?.();
+
+      if (!createdAt) return false;
+
+      return (
+        createdAt.getMonth() === currentMonth &&
+        createdAt.getFullYear() === currentYear
+      );
+    });
+
+    const totalSales = paidThisMonth.reduce(
+      (sum, inv) => sum + Number(inv.total || 0),
+      0,
+    );
+
+    const highestSale = paidThisMonth.reduce(
+      (max, inv) => Math.max(max, Number(inv.total || 0)),
+      0,
+    );
+
+    return {
+      success: true,
+      data: {
+        count: paidThisMonth.length,
+        totalSales,
+        highestSale,
+      },
     };
   } catch (error) {
     return {

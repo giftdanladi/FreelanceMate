@@ -1,24 +1,31 @@
+import { IUser } from "@/interface";
+import { addInvoice } from "@/util/firestore";
 import { FontFamily } from "@/util/FontFamily";
+import generateCode from "@/util/generateInvoice";
+import { readData } from "@/util/storage";
+import { useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
+import { useEffect, useState } from "react";
 import {
+  ActivityIndicator,
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
   View,
-  StyleSheet,
-  Alert,
-  ActivityIndicator,
-  ScrollView,
-  KeyboardAvoidingView,
-  Platform,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
 import DateTimePickerModal from "react-native-modal-datetime-picker";
-import { useEffect, useState } from "react";
-import { addInvoice } from "@/util/firestore";
-import generateCode from "@/util/generateInvoice";
-import { IUser } from "@/interface";
-import { readData } from "@/util/storage";
+import { SafeAreaView } from "react-native-safe-area-context";
+
+interface InvoiceItem {
+  id: string;
+  name: string;
+  price: string;
+}
 
 export default function Page() {
   const [date, setDate] = useState<Date>(new Date());
@@ -26,28 +33,107 @@ export default function Page() {
   const [user, setUser] = useState<IUser>();
   const [loading, setLoading] = useState<boolean>(false);
   const [showDatePicker, setShowDatePicker] = useState<boolean>(false);
+  const [items, setItems] = useState<InvoiceItem[]>([
+    { id: Date.now().toString(), name: "", price: "" },
+  ]);
+  const router = useRouter();
 
   const confirm = (selectedDate: Date) => {
     setShowDatePicker(false);
     setDate(selectedDate);
   };
 
+  const addItem = () => {
+    setItems([...items, { id: Date.now().toString(), name: "", price: "" }]);
+  };
+
+  const removeItem = (id: string) => {
+    if (items.length > 1) {
+      setItems(items.filter((item) => item.id !== id));
+    }
+  };
+
+  const updateItem = (id: string, field: "name" | "price", value: string) => {
+    setItems(
+      items.map((item) => (item.id === id ? { ...item, [field]: value } : item))
+    );
+  };
+
+  const calculateSubtotal = (): number => {
+    return items.reduce((sum, item) => {
+      const price = parseFloat(item.price) || 0;
+      return sum + price;
+    }, 0);
+  };
+
+  const calculateTotal = (): number => {
+    return calculateSubtotal();
+  };
+
   const handleSubmit = async () => {
-    if (Object.keys(inputs).length < 7) {
-      return Alert.alert("Notification", "Please fill all forms!");
+    // Validate required fields
+    if (!inputs.clientName || !inputs.clientEmail || !inputs.clientAddress) {
+      return Alert.alert("Notification", "Please fill all required fields!");
     }
 
-    inputs.dueDate = date || new Date();
+    // Validate items
+    const validItems = items.filter((item) => item.name.trim() && item.price);
+    if (validItems.length === 0) {
+      return Alert.alert("Notification", "Please add at least one item with a price!");
+    }
 
-    inputs.invoiceNumber = generateCode();
-    inputs.status = "pending";
-    inputs.userId = user?.id;
+    // Calculate amounts
+    const subtotal = calculateSubtotal();
+    const total = calculateTotal();
 
+    // Format items as JSON string with name and price
+    const itemsData = validItems.map((item) => ({
+      name: item.name,
+      price: parseFloat(item.price) || 0,
+    }));
+    const itemsString = JSON.stringify(itemsData);
+
+    // Prepare invoice data
+    const invoiceData: any = {
+      ...inputs,
+      items: itemsString,
+      amount: subtotal.toString(),
+      tax: "0", // No tax
+      total: total.toString(),
+      dueDate: date || new Date(),
+      invoiceNumber: generateCode(),
+      userId: user?.id,
+    };
+
+    Alert.alert("Confirmation", "Is this a paid invoice?", [
+      {
+        text: "No, pending",
+        style: "cancel",
+        onPress: () => {
+          invoiceData.status = "pending";
+          createInvoice(invoiceData);
+        },
+      },
+      {
+        text: "Paid",
+        onPress: () => {
+          invoiceData.status = "paid";
+          createInvoice(invoiceData);
+        },
+      },
+    ]);
+  };
+
+  const createInvoice = async (_inputs: any) => {
     setLoading(true);
     try {
-      const res = await addInvoice(inputs);
+      const res = await addInvoice(_inputs);
       if (res.success) {
         Alert.alert("Notification", "Invoice Created");
+        router.replace("/");
+        // Reset form
+        setInputs({});
+        setItems([{ id: Date.now().toString(), name: "", price: "" }]);
       } else {
         Alert.alert("Notification", res.message);
       }
@@ -78,10 +164,15 @@ export default function Page() {
         </Text>
 
         {/*Inputs*/}
-        <ScrollView className="my-2 flex-col">
+        <ScrollView
+          className="my-2 flex-col"
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={{ paddingBottom: 80, minHeight: "100%" }}
+        >
           <TextInput
             className="border-[1px] border-gray-300 mb-3 bg-white rounded-2xl p-5 focus:border-sky-500 font-medium placeholder:text-gray-500 dark:text-black"
-            placeholder="Client Name"
+            placeholder="Name"
+            defaultValue={inputs.clientName}
             onChangeText={(e) => setInputs({ ...inputs, clientName: e })}
             autoCorrect={false}
             autoFocus
@@ -89,38 +180,94 @@ export default function Page() {
 
           <TextInput
             className="border-[1px] border-gray-300 mb-3 bg-white rounded-2xl p-5 focus:border-sky-500 font-medium placeholder:text-gray-500 dark:text-black"
-            placeholder="Client Email"
+            placeholder="Email"
             keyboardType="email-address"
+            defaultValue={inputs.clientEmail}
             autoCapitalize="none"
             autoCorrect={false}
             onChangeText={(e) => setInputs({ ...inputs, clientEmail: e })}
           />
 
-          <View className="w-full flex-row gap-3">
-            <TextInput
-              className="flex-1 border-[1px] border-gray-300 mb-3 bg-white rounded-2xl p-5 focus:border-sky-500 font-medium placeholder:text-gray-500 dark:text-black"
-              placeholder="Amount"
-              onChangeText={(e) => setInputs({ ...inputs, amount: e })}
-              autoCorrect={false}
-              keyboardType="numbers-and-punctuation"
-            />
-
-            <TextInput
-              className="flex-1 border-[1px] border-gray-300 mb-3 bg-white rounded-2xl p-5 focus:border-sky-500 font-medium placeholder:text-gray-500 dark:text-black"
-              placeholder="Tax"
-              onChangeText={(e) => setInputs({ ...inputs, tax: e })}
-              autoCorrect={false}
-              keyboardType="numbers-and-punctuation"
-            />
-          </View>
-
           <TextInput
             className="border-[1px] border-gray-300 mb-3 bg-white rounded-2xl p-5 focus:border-sky-500 font-medium placeholder:text-gray-500 dark:text-black"
-            placeholder="Total"
-            keyboardType="numbers-and-punctuation"
+            placeholder="Address"
+            defaultValue={inputs.clientAddress}
             autoCorrect={false}
-            onChangeText={(e) => setInputs({ ...inputs, total: e })}
+            onChangeText={(e) => setInputs({ ...inputs, clientAddress: e })}
+            multiline
           />
+
+          {/* Items Section */}
+          <View className="mb-3">
+            <View className="flex-row justify-between items-center mb-2">
+              <Text
+                className="text-lg"
+                style={{ fontFamily: FontFamily.bricolageBold }}
+              >
+                Items
+              </Text>
+              <TouchableOpacity
+                onPress={addItem}
+                className="bg-sky-600 px-4 py-2 rounded-xl"
+              >
+                <Text className="text-white font-semibold">+ Add Item</Text>
+              </TouchableOpacity>
+            </View>
+
+            {items.map((item, index) => (
+              <View
+                key={item.id}
+                className="border-[1px] border-gray-300 mb-3 bg-white rounded-2xl p-4"
+              >
+                <View className="flex-row items-center justify-between mb-2">
+                  <Text className="text-gray-600 font-medium">
+                    Item {index + 1}
+                  </Text>
+                  {items.length > 1 && (
+                    <TouchableOpacity
+                      onPress={() => removeItem(item.id)}
+                      className="bg-red-100 px-3 py-1 rounded-lg"
+                    >
+                      <Text className="text-red-600 font-semibold">Remove</Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
+                <TextInput
+                  className="border-[1px] border-gray-200 mb-2 bg-gray-50 rounded-xl p-3 focus:border-sky-500 font-medium placeholder:text-gray-400 dark:text-black"
+                  placeholder="Item name"
+                  value={item.name}
+                  onChangeText={(e) => updateItem(item.id, "name", e)}
+                  autoCorrect={false}
+                />
+                <TextInput
+                  className="border-[1px] border-gray-200 bg-gray-50 rounded-xl p-3 focus:border-sky-500 font-medium placeholder:text-gray-400 dark:text-black"
+                  placeholder="Price (£)"
+                  value={item.price}
+                  onChangeText={(e) => updateItem(item.id, "price", e)}
+                  keyboardType="decimal-pad"
+                  autoCorrect={false}
+                />
+              </View>
+            ))}
+
+            {/* Summary Section */}
+            <View className="bg-gray-50 rounded-2xl p-4 mb-3 border-[1px] border-gray-200">
+              <View className="flex-row justify-between">
+                <Text
+                  className="text-lg font-bold"
+                  style={{ fontFamily: FontFamily.bricolageBold }}
+                >
+                  Total:
+                </Text>
+                <Text
+                  className="text-lg font-bold text-sky-600"
+                  style={{ fontFamily: FontFamily.bricolageBold }}
+                >
+                  £{calculateTotal().toFixed(2)}
+                </Text>
+              </View>
+            </View>
+          </View>
 
           <View className="gap-2">
             <Text className="text-gray-800">Date</Text>
@@ -142,17 +289,11 @@ export default function Page() {
             </View>
           </View>
 
-          <TextInput
-            className="border-[1px] border-gray-300 mb-3 bg-white rounded-2xl p-5 focus:border-sky-500 font-medium placeholder:text-gray-500 dark:text-black"
-            placeholder="Items purchased (seperate with commas)"
-            onChangeText={(e) => setInputs({ ...inputs, items: e })}
-            autoCorrect={false}
-            autoCapitalize="none"
-          />
 
           <TextInput
             className="border-[1px] border-gray-300 mb-3 bg-white rounded-2xl p-5 focus:border-sky-500 font-medium placeholder:text-gray-500 h-40 dark:text-black"
-            placeholder="Note"
+            placeholder="Notes"
+            defaultValue={inputs.note}
             onChangeText={(e) => setInputs({ ...inputs, note: e })}
             multiline
           />

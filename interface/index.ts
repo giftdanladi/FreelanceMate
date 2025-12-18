@@ -1,3 +1,5 @@
+import { Timestamp } from "firebase/firestore";
+
 export interface IInvoice {
   id?: string;
   userId: string;
@@ -12,6 +14,7 @@ export interface IInvoice {
   note: string;
   items: string;
   status: "paid" | "pending" | "overdue";
+  createdAt?: Date | Timestamp;
 }
 
 export interface IExpense {
