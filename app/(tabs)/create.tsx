@@ -171,7 +171,7 @@ export default function Page() {
         >
           <TextInput
             className="border-[1px] border-gray-300 mb-3 bg-white rounded-2xl p-5 focus:border-sky-500 font-medium placeholder:text-gray-500 dark:text-black"
-            placeholder="Name"
+            placeholder="Client name"
             defaultValue={inputs.clientName}
             onChangeText={(e) => setInputs({ ...inputs, clientName: e })}
             autoCorrect={false}
@@ -180,7 +180,7 @@ export default function Page() {
 
           <TextInput
             className="border-[1px] border-gray-300 mb-3 bg-white rounded-2xl p-5 focus:border-sky-500 font-medium placeholder:text-gray-500 dark:text-black"
-            placeholder="Email"
+            placeholder="Client email"
             keyboardType="email-address"
             defaultValue={inputs.clientEmail}
             autoCapitalize="none"
@@ -270,7 +270,7 @@ export default function Page() {
           </View>
 
           <View className="gap-2">
-            <Text className="text-gray-800">Date</Text>
+            <Text className="text-gray-800">Due date</Text>
             <View className="border-[1px] border-gray-300 mb-3 bg-white rounded-2xl p-5 font-medium">
               {showDatePicker && (
                 <DateTimePickerModal

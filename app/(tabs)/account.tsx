@@ -62,7 +62,7 @@ export default function Page() {
       <ScrollView className="rounded-t-[26px] h-screen px-5">
         <View className="mb-3 bg-white p-3 rounded-2xl">
           <View>
-            <Text className="text-lg text-sky-600">Business Name</Text>
+            <Text className="text-lg text-sky-600">Business name</Text>
           </View>
           <Text className="text-md text-black">{user?.business}</Text>
         </View>

@@ -83,7 +83,7 @@ export default function Page() {
           placeholder="Amount"
           onChangeText={(e) => setInputs({ ...inputs, amount: e })}
           autoCorrect={false}
-          keyboardType="numbers-and-punctuation"
+          keyboardType="decimal-pad"
         />
 
         <View className="gap-2">

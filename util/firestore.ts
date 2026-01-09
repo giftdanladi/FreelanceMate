@@ -338,7 +338,11 @@ export const addChat = async (data: any) => {
 export const getAllConversations = async () => {
   const user: IUser = await readData("user");
   try {
-    const q = query(chatRef, where("userId", "==", user.id));
+    const q = query(
+      chatRef,
+      where("userId", "==", user.id),
+      orderBy("createdAt", "asc") // Added orderBy to fix query
+    );
 
     const snapshot = await getDocs(q);
     const data: any = [];
@@ -420,4 +424,374 @@ export const getSalesStatsThisMonth = async () => {
       message: error,
     };
   }
+};
+
+// NEW: Get sales stats for last month
+export const getSalesStatsLastMonth = async () => {
+  const user: IUser = await readData("user");
+
+  try {
+    const q = query(
+      invoiceRef,
+      where("userId", "==", user.id),
+      orderBy("createdAt", "desc"),
+    );
+
+    const snapshot = await getDocs(q);
+    const invoices: IInvoice[] = [];
+
+    snapshot.forEach((doc) => {
+      invoices.push({ id: doc.id, ...(doc.data() as IInvoice) });
+    });
+
+    const now = new Date();
+    const lastMonth = now.getMonth() === 0 ? 11 : now.getMonth() - 1;
+    const lastMonthYear = now.getMonth() === 0 ? now.getFullYear() - 1 : now.getFullYear();
+
+    const paidLastMonth = invoices.filter((inv) => {
+      if (inv.status !== "paid") return false;
+
+      const createdAt =
+        inv.createdAt instanceof Date
+          ? inv.createdAt
+          : inv.createdAt?.toDate?.();
+
+      if (!createdAt) return false;
+
+      return (
+        createdAt.getMonth() === lastMonth &&
+        createdAt.getFullYear() === lastMonthYear
+      );
+    });
+
+    const totalSales = paidLastMonth.reduce(
+      (sum, inv) => sum + Number(inv.total || 0),
+      0,
+    );
+
+    const highestSale = paidLastMonth.reduce(
+      (max, inv) => Math.max(max, Number(inv.total || 0)),
+      0,
+    );
+
+    return {
+      success: true,
+      data: {
+        count: paidLastMonth.length,
+        totalSales,
+        highestSale,
+        month: lastMonth,
+        year: lastMonthYear,
+      },
+    };
+  } catch (error) {
+    return {
+      success: false,
+      message: error,
+    };
+  }
+};
+
+// NEW: Get sales stats for a specific month
+export const getSalesStatsByMonth = async (month: number, year: number) => {
+  const user: IUser = await readData("user");
+
+  try {
+    const q = query(
+      invoiceRef,
+      where("userId", "==", user.id),
+      orderBy("createdAt", "desc"),
+    );
+
+    const snapshot = await getDocs(q);
+    const invoices: IInvoice[] = [];
+
+    snapshot.forEach((doc) => {
+      invoices.push({ id: doc.id, ...(doc.data() as IInvoice) });
+    });
+
+    const paidInMonth = invoices.filter((inv) => {
+      if (inv.status !== "paid") return false;
+
+      const createdAt =
+        inv.createdAt instanceof Date
+          ? inv.createdAt
+          : inv.createdAt?.toDate?.();
+
+      if (!createdAt) return false;
+
+      return (
+        createdAt.getMonth() === month &&
+        createdAt.getFullYear() === year
+      );
+    });
+
+    const totalSales = paidInMonth.reduce(
+      (sum, inv) => sum + Number(inv.total || 0),
+      0,
+    );
+
+    const highestSale = paidInMonth.reduce(
+      (max, inv) => Math.max(max, Number(inv.total || 0)),
+      0,
+    );
+
+    return {
+      success: true,
+      data: {
+        count: paidInMonth.length,
+        totalSales,
+        highestSale,
+        month,
+        year,
+      },
+    };
+  } catch (error) {
+    return {
+      success: false,
+      message: error,
+    };
+  }
+};
+
+// NEW: Get invoice stats by month
+export const getInvoiceStatsByMonth = async (month: number, year: number) => {
+  const user: IUser = await readData("user");
+  try {
+    const q = query(
+      invoiceRef,
+      where("userId", "==", user.id as string),
+      orderBy("createdAt", "desc"),
+    );
+
+    const snapshot = await getDocs(q);
+    const allInvoices: IInvoice[] = [];
+
+    snapshot.forEach((doc) => {
+      allInvoices.push({ id: doc.id, ...(doc.data() as IInvoice) });
+    });
+
+    const invoices = allInvoices.filter((inv) => {
+      const createdAt =
+        inv.createdAt instanceof Date
+          ? inv.createdAt
+          : inv.createdAt?.toDate?.();
+
+      if (!createdAt) return false;
+
+      return (
+        createdAt.getMonth() === month &&
+        createdAt.getFullYear() === year
+      );
+    });
+
+    const total = invoices.length;
+    const paid = invoices.filter((inv) => inv.status === "paid").length;
+    const pending = invoices.filter((inv) => inv.status === "pending").length;
+    const overdue = invoices.filter((inv) => inv.status === "overdue").length;
+
+    return {
+      success: true,
+      data: {
+        total,
+        paid,
+        pending,
+        overdue,
+        month,
+        year,
+      },
+    };
+  } catch (error) {
+    return {
+      success: false,
+      message: error,
+    };
+  }
+};
+
+// Helper function to get month name
+export const getMonthName = (month: number): string => {
+  const months = [
+    "January", "February", "March", "April", "May", "June",
+    "July", "August", "September", "October", "November", "December"
+  ];
+  return months[month];
+};
+
+export const getDetailedInvoiceContext = async () => {
+  const user: IUser = await readData("user");
+  try {
+    const q = query(
+      invoiceRef,
+      where("userId", "==", user.id as string),
+      orderBy("createdAt", "desc"),
+    );
+
+    const snapshot = await getDocs(q);
+    const invoices: IInvoice[] = [];
+
+    snapshot.forEach((doc) => {
+      invoices.push({ id: doc.id, ...(doc.data() as IInvoice) });
+    });
+
+    const now = new Date();
+    const unpaidInvoices = invoices.filter((inv) => inv.status !== "paid");
+
+    // Categorize unpaid invoices
+    const pending = unpaidInvoices.filter((inv) => inv.status === "pending");
+    const overdue = unpaidInvoices.filter((inv) => inv.status === "overdue");
+
+    // Analyze each unpaid invoice
+    const invoiceDetails = unpaidInvoices.map((inv) => {
+      const dueDate = inv.dueDate instanceof Date
+        ? inv.dueDate
+        : typeof inv.dueDate === 'string'
+          ? new Date(inv.dueDate)
+          : inv.dueDate?.toDate?.();
+
+      const issueDate = inv.createdAt instanceof Date
+        ? inv.createdAt
+        : inv.createdAt?.toDate?.();
+
+      let daysOverdue = 0;
+      let daysTillDue = 0;
+
+      if (dueDate) {
+        const diffTime = now.getTime() - dueDate.getTime();
+        const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+
+        if (diffDays > 0) {
+          daysOverdue = diffDays;
+        } else {
+          daysTillDue = Math.abs(diffDays);
+        }
+      }
+
+      return {
+        id: inv.id,
+        status: inv.status,
+        total: inv.total,
+        clientName: inv.clientName || "Unknown Client",
+        dueDate,
+        issueDate,
+        daysOverdue,
+        daysTillDue,
+        isOverdue: daysOverdue > 0,
+        isPending: inv.status === "pending" && daysOverdue === 0,
+      };
+    });
+
+    return {
+      success: true,
+      data: {
+        totalUnpaid: unpaidInvoices.length,
+        pendingCount: pending.length,
+        overdueCount: overdue.length,
+        invoiceDetails,
+      },
+    };
+  } catch (error) {
+    return {
+      success: false,
+      message: error,
+    };
+  }
+};
+
+// Replace the invoice query handling section in your Chat.tsx handlePrompt function
+// with this enhanced version:
+
+export const handleUnpaidInvoiceQuery = async (
+  prompt: string,
+  currentUser: IUser
+) => {
+  const lowerPrompt = prompt.toLowerCase();
+
+  const isAskingWhy =
+    lowerPrompt.includes("why") ||
+    lowerPrompt.includes("reason");
+
+  const mentionsUnpaid =
+    lowerPrompt.includes("unpaid") ||
+    lowerPrompt.includes("not paid") ||
+    lowerPrompt.includes("haven't been paid");
+
+  if (isAskingWhy && mentionsUnpaid) {
+    const contextRes = await getDetailedInvoiceContext();
+
+    if (contextRes.success) {
+      const { totalUnpaid, overdueCount, pendingCount, invoiceDetails } =
+        contextRes.data as unknown as {
+          totalUnpaid: number;
+          overdueCount: number;
+          pendingCount: number;
+          invoiceDetails: Array<{
+            id: string;
+            status: string;
+            total: number;
+            clientName: string;
+            daysOverdue: number;
+            daysTillDue: number;
+            isOverdue: boolean;
+            isPending: boolean;
+          }>;
+        };
+
+      let response = "";
+
+      if (totalUnpaid === 0) {
+        response = "You don't have any unpaid invoices. All invoices have been paid. Great job staying on top of your finances! 🎉";
+      } else if (totalUnpaid === 1) {
+        const inv = invoiceDetails[0];
+
+        if (inv.isOverdue) {
+          const dayText = inv.daysOverdue === 1 ? "day" : "days";
+          response = `You have one unpaid invoice because it has passed its due date by ${inv.daysOverdue} ${dayText} and has not yet been paid. `;
+          response += `This invoice is for ${inv.clientName}. `;
+          response += `Would you like me to help you draft a follow-up reminder?`;
+        } else if (inv.isPending) {
+          if (inv.daysTillDue > 0) {
+            const dayText = inv.daysTillDue === 1 ? "day" : "days";
+            response = `You have one unpaid invoice because it was issued recently and has not yet reached its due date (due in ${inv.daysTillDue} ${dayText}). `;
+            response += `This is normal, and no action is required right now. The invoice is for ${inv.clientName}.`;
+          } else {
+            response = `You have one unpaid invoice for ${inv.clientName}. It's currently pending and no action is required yet.`;
+          }
+        }
+      } else {
+        // Multiple unpaid invoices
+        const overdueInvoices = invoiceDetails.filter(inv => inv.isOverdue);
+        const pendingInvoices = invoiceDetails.filter(inv => inv.isPending);
+
+        response = `You have ${totalUnpaid} unpaid invoices. `;
+
+        if (overdueCount > 0 && pendingCount > 0) {
+          response += `${overdueCount} ${overdueCount === 1 ? 'is' : 'are'} overdue and ${pendingCount} ${pendingCount === 1 ? 'is' : 'are'} still pending. `;
+        } else if (overdueCount > 0) {
+          response += `All ${overdueCount} ${overdueCount === 1 ? 'has' : 'have'} passed their due dates. `;
+        } else if (pendingCount > 0) {
+          response += `All ${pendingCount} ${pendingCount === 1 ? 'is' : 'are'} still within their payment period. `;
+        }
+
+        // Mention most overdue
+        if (overdueInvoices.length > 0) {
+          const mostOverdue = overdueInvoices.reduce((prev, current) =>
+            current.daysOverdue > prev.daysOverdue ? current : prev
+          );
+
+          const dayText = mostOverdue.daysOverdue === 1 ? "day" : "days";
+          response += `The most overdue is for ${mostOverdue.clientName}, which is ${mostOverdue.daysOverdue} ${dayText} late. `;
+        }
+
+        response += `Would you like help prioritizing follow-ups?`;
+      }
+
+      return {
+        success: true,
+        response,
+      };
+    }
+  }
+
+  return { success: false };
 };

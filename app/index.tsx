@@ -8,6 +8,8 @@ import {
   View,
   StyleSheet,
   ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Image } from "expo-image";
@@ -29,7 +31,6 @@ export default function Page() {
     setLoading(true);
     try {
       const res = await loginUser(inputs);
-      console.log(res)
       if (res.success) {
         await storeData("user", res.user);
         router.replace("/(tabs)");
@@ -69,42 +70,46 @@ export default function Page() {
         </Pressable>
       </View>
 
-      <ScrollView className="my-20 flex-col">
-        <TextInput
-          className="border-[1px] border-gray-300 mb-3 bg-white rounded-2xl p-5 focus:border-sky-500 font-medium placeholder:text-gray-500"
-          placeholder="Email Address"
-          autoCapitalize="none"
-          keyboardType="email-address"
-          autoCorrect={false}
-          onChangeText={(e) => setInputs({ ...inputs, email: e })}
-        />
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+      >
+        <ScrollView className="my-20 flex-col">
+          <TextInput
+            className="border-[1px] border-gray-300 mb-3 bg-white rounded-2xl p-5 focus:border-sky-500 font-medium placeholder:text-gray-500 dark:text-black"
+            placeholder="Email Address"
+            autoCapitalize="none"
+            keyboardType="email-address"
+            autoCorrect={false}
+            onChangeText={(e) => setInputs({ ...inputs, email: e })}
+          />
 
-        <TextInput
-          className="border-[1px] border-gray-300 mb-3 bg-white rounded-2xl p-5 focus:border-sky-500 font-medium placeholder:text-gray-500"
-          placeholder="Password"
-          secureTextEntry={true}
-          autoCapitalize="none"
-          autoCorrect={false}
-          onChangeText={(e) => setInputs({ ...inputs, password: e })}
-          keyboardType="default"
-        />
+          <TextInput
+            className="border-[1px] border-gray-300 mb-3 bg-white rounded-2xl p-5 focus:border-sky-500 font-medium placeholder:text-gray-500 dark:text-black"
+            placeholder="Password"
+            secureTextEntry={true}
+            autoCapitalize="none"
+            autoCorrect={false}
+            onChangeText={(e) => setInputs({ ...inputs, password: e })}
+            keyboardType="default"
+          />
 
-        <TouchableOpacity
-          className="w-full bg-sky-600 p-5 mt-10 items-center rounded-2xl"
-          onPress={handleLogin}
-        >
-          {loading ? (
-            <View className="flex-row gap-2">
-              <ActivityIndicator />
-              <Text className="text-sky-100 text-lg font-medium">
-                Authenticating...
-              </Text>
-            </View>
-          ) : (
-            <Text className="text-sky-100 text-lg font-bold">Login</Text>
-          )}
-        </TouchableOpacity>
-      </ScrollView>
+          <TouchableOpacity
+            className="w-full bg-sky-600 p-5 mt-10 items-center rounded-2xl"
+            onPress={handleLogin}
+          >
+            {loading ? (
+              <View className="flex-row gap-2">
+                <ActivityIndicator />
+                <Text className="text-sky-100 text-lg font-medium">
+                  Authenticating...
+                </Text>
+              </View>
+            ) : (
+              <Text className="text-sky-100 text-lg font-bold">Login</Text>
+            )}
+          </TouchableOpacity>
+        </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }

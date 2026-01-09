@@ -10,7 +10,7 @@ export interface IInvoice {
   amount: string;
   tax: string;
   total: string;
-  dueDate: string;
+  dueDate: string | Timestamp | Date;
   note: string;
   items: string;
   status: "paid" | "pending" | "overdue";
