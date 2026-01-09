@@ -61,7 +61,7 @@ export default function Page() {
     <SafeAreaView className="px-3 py-3 h-screen">
       <TextInput
         className="border-[1px] border-gray-300 mb-3 bg-white rounded-2xl p-5 focus:border-sky-500 font-medium placeholder:text-gray-500"
-        placeholder="Full Name"
+        placeholder="Full name"
         autoCorrect={false}
         defaultValue={user?.fullname}
         editable={true}
