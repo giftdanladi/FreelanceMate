@@ -1,16 +1,18 @@
 import { IUser } from "@/interface";
-import { addInvoice, updateProfile } from "@/util/firestore";
+import { updateProfile } from "@/util/firestore";
 import { readData, storeData } from "@/util/storage";
 import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import {
+  ActivityIndicator,
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
+  StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
-  StyleSheet,
-  Alert,
   View,
-  ActivityIndicator,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -59,68 +61,74 @@ export default function Page() {
 
   return (
     <SafeAreaView className="px-3 py-3 h-screen">
-      <TextInput
-        className="border-[1px] border-gray-300 mb-3 bg-white rounded-2xl p-5 focus:border-sky-500 font-medium placeholder:text-gray-500"
-        placeholder="Full name"
-        autoCorrect={false}
-        defaultValue={user?.fullname}
-        editable={true}
-        onChangeText={(e) => setInputs({ ...inputs, fullname: e })}
-      />
-
-      <TextInput
-        className="border-[1px] border-gray-300 mb-3 bg-white rounded-2xl p-5 focus:border-sky-500 font-medium placeholder:text-gray-500"
-        placeholder="Business name"
-        autoCorrect={false}
-        defaultValue={user?.business}
-        editable={true}
-        onChangeText={(e) => setInputs({ ...inputs, business: e })}
-      />
-
-      <TextInput
-        className="border-[1px] border-gray-300 mb-3 bg-white rounded-2xl p-5 focus:border-sky-500 font-medium placeholder:text-gray-500"
-        placeholder="Contact phone"
-        autoCorrect={false}
-        defaultValue={user?.contactPhone}
-        editable={true}
-        onChangeText={(e) => setInputs({ ...inputs, contactPhone: e })}
-      />
-
-      <TextInput
-        className="border-[1px] border-gray-300 mb-3 bg-white rounded-2xl p-5 focus:border-sky-500 font-medium placeholder:text-gray-500"
-        placeholder="Email Address"
-        autoCapitalize="none"
-        keyboardType="email-address"
-        autoCorrect={false}
-        defaultValue={user?.email}
-        onChangeText={(e) => setInputs({ ...inputs, email: e })}
-      />
-
-      <TextInput
-        className="border-[1px] border-gray-300 mb-3 bg-white rounded-2xl p-5 focus:border-sky-500 font-medium placeholder:text-gray-500 h-40"
-        placeholder="Contact address"
-        defaultValue={user?.contactAddress}
-        onChangeText={(e) => setInputs({ ...inputs, contactAddress: e })}
-        editable={true}
-        multiline
-      />
-
-      <TouchableOpacity
-        className="w-96 bg-sky-600 p-5 items-center rounded-2xl absolute bottom-52 justify-center ml-8"
-        style={styles.glassContainer}
-        onPress={handleSubmit}
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        keyboardVerticalOffset={50}
+        className="h-[80%]"
       >
-        {loading ? (
-          <View className="flex-row gap-2">
-            <ActivityIndicator />
-            <Text className="text-sky-600 text-lg font-medium">
-              Updating...
-            </Text>
-          </View>
-        ) : (
-          <Text className="text-sky-600 text-lg font-bold">Update profile</Text>
-        )}
-      </TouchableOpacity>
+        <TextInput
+          className="border-[1px] border-gray-300 mb-3 bg-white rounded-2xl p-5 focus:border-sky-500 font-medium placeholder:text-gray-500"
+          placeholder="Full Name"
+          autoCorrect={false}
+          defaultValue={user?.fullname}
+          editable={true}
+          onChangeText={(e) => setInputs({ ...inputs, fullname: e })}
+        />
+
+        <TextInput
+          className="border-[1px] border-gray-300 mb-3 bg-white rounded-2xl p-5 focus:border-sky-500 font-medium placeholder:text-gray-500"
+          placeholder="Business name"
+          autoCorrect={false}
+          defaultValue={user?.business}
+          editable={true}
+          onChangeText={(e) => setInputs({ ...inputs, business: e })}
+        />
+
+        <TextInput
+          className="border-[1px] border-gray-300 mb-3 bg-white rounded-2xl p-5 focus:border-sky-500 font-medium placeholder:text-gray-500"
+          placeholder="Contact phone"
+          autoCorrect={false}
+          defaultValue={user?.contactPhone}
+          editable={true}
+          onChangeText={(e) => setInputs({ ...inputs, contactPhone: e })}
+        />
+
+        <TextInput
+          className="border-[1px] border-gray-300 mb-3 bg-white rounded-2xl p-5 focus:border-sky-500 font-medium placeholder:text-gray-500"
+          placeholder="Email Address"
+          autoCapitalize="none"
+          keyboardType="email-address"
+          autoCorrect={false}
+          defaultValue={user?.email}
+          onChangeText={(e) => setInputs({ ...inputs, email: e })}
+        />
+
+        <TextInput
+          className="border-[1px] border-gray-300 mb-3 bg-white rounded-2xl p-5 focus:border-sky-500 font-medium placeholder:text-gray-500 h-40"
+          placeholder="Contact address"
+          defaultValue={user?.contactAddress}
+          onChangeText={(e) => setInputs({ ...inputs, contactAddress: e })}
+          editable={true}
+          multiline
+        />
+
+        <TouchableOpacity
+          className="w-96 bg-sky-600 p-5 items-center rounded-2xl absolute bottom-0 justify-center ml-8"
+          style={styles.glassContainer}
+          onPress={handleSubmit}
+        >
+          {loading ? (
+            <View className="flex-row gap-2">
+              <ActivityIndicator />
+              <Text className="text-sky-600 text-lg font-medium">
+                Updating...
+              </Text>
+            </View>
+          ) : (
+            <Text className="text-sky-600 text-lg font-bold">Update profile</Text>
+          )}
+        </TouchableOpacity>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }

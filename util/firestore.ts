@@ -795,3 +795,300 @@ export const handleUnpaidInvoiceQuery = async (
 
   return { success: false };
 };
+
+// Get income/sales for a specific month
+export const getIncomeByMonth = async (month: number, year: number) => {
+  const user: IUser = await readData("user");
+
+  try {
+    const q = query(
+      invoiceRef,
+      where("userId", "==", user.id),
+      orderBy("createdAt", "desc"),
+    );
+
+    const snapshot = await getDocs(q);
+    const invoices: IInvoice[] = [];
+
+    snapshot.forEach((doc) => {
+      invoices.push({ id: doc.id, ...(doc.data() as IInvoice) });
+    });
+
+    const paidInMonth = invoices.filter((inv) => {
+      if (inv.status !== "paid") return false;
+
+      const createdAt =
+        inv.createdAt instanceof Date
+          ? inv.createdAt
+          : inv.createdAt?.toDate?.();
+
+      if (!createdAt) return false;
+
+      return (
+        createdAt.getMonth() === month &&
+        createdAt.getFullYear() === year
+      );
+    });
+
+    const totalIncome = paidInMonth.reduce(
+      (sum, inv) => sum + Number(inv.total || 0),
+      0,
+    );
+
+    const highestSale = paidInMonth.reduce(
+      (max, inv) => Math.max(max, Number(inv.total || 0)),
+      0,
+    );
+
+    const averageSale = paidInMonth.length > 0 ? totalIncome / paidInMonth.length : 0;
+
+    return {
+      success: true,
+      data: {
+        count: paidInMonth.length,
+        totalIncome,
+        highestSale,
+        averageSale,
+        month,
+        year,
+      },
+    };
+  } catch (error) {
+    return {
+      success: false,
+      message: error,
+    };
+  }
+};
+
+// Get income for the last N months
+export const getIncomeLastNMonths = async (numberOfMonths: number = 6) => {
+  const user: IUser = await readData("user");
+
+  try {
+    const q = query(
+      invoiceRef,
+      where("userId", "==", user.id),
+      orderBy("createdAt", "desc"),
+    );
+
+    const snapshot = await getDocs(q);
+    const invoices: IInvoice[] = [];
+
+    snapshot.forEach((doc) => {
+      invoices.push({ id: doc.id, ...(doc.data() as IInvoice) });
+    });
+
+    const now = new Date();
+    const monthlyData: Array<{
+      month: number;
+      year: number;
+      monthName: string;
+      totalIncome: number;
+      count: number;
+    }> = [];
+
+    // Get data for last N months
+    for (let i = 0; i < numberOfMonths; i++) {
+      const targetDate = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const month = targetDate.getMonth();
+      const year = targetDate.getFullYear();
+
+      const paidInMonth = invoices.filter((inv) => {
+        if (inv.status !== "paid") return false;
+
+        const createdAt =
+          inv.createdAt instanceof Date
+            ? inv.createdAt
+            : inv.createdAt?.toDate?.();
+
+        if (!createdAt) return false;
+
+        return (
+          createdAt.getMonth() === month &&
+          createdAt.getFullYear() === year
+        );
+      });
+
+      const totalIncome = paidInMonth.reduce(
+        (sum, inv) => sum + Number(inv.total || 0),
+        0,
+      );
+
+      monthlyData.push({
+        month,
+        year,
+        monthName: getMonthName(month),
+        totalIncome,
+        count: paidInMonth.length,
+      });
+    }
+
+    // Reverse so oldest month is first
+    monthlyData.reverse();
+
+    return {
+      success: true,
+      data: monthlyData,
+    };
+  } catch (error) {
+    return {
+      success: false,
+      message: error,
+    };
+  }
+};
+
+// Predict future income based on historical data
+export const predictFutureIncome = async () => {
+  const user: IUser = await readData("user");
+
+  try {
+    // Get last 6 months of data
+    const historyRes = await getIncomeLastNMonths(6);
+
+    if (!historyRes.success || !historyRes.data) {
+      return {
+        success: false,
+        message: "Unable to fetch historical data",
+      };
+    }
+
+    const monthlyData = historyRes.data;
+
+    // Filter out months with no income for more accurate prediction
+    const monthsWithIncome = monthlyData.filter(m => m.totalIncome > 0);
+
+    if (monthsWithIncome.length === 0) {
+      return {
+        success: true,
+        data: {
+          prediction: 0,
+          confidence: "low",
+          message: "Not enough data to make a prediction. Start tracking your income!",
+          averageMonthlyIncome: 0,
+          trend: "insufficient_data",
+        },
+      };
+    }
+
+    // Calculate average monthly income
+    const totalIncome = monthsWithIncome.reduce((sum, m) => sum + m.totalIncome, 0);
+    const averageMonthlyIncome = totalIncome / monthsWithIncome.length;
+
+    // Calculate trend (simple linear regression)
+    let trend: "increasing" | "decreasing" | "stable" | "insufficient_data" = "stable";
+    let growthRate = 0;
+
+    if (monthsWithIncome.length >= 3) {
+      const recentMonths = monthsWithIncome.slice(-3);
+      const earlierMonths = monthsWithIncome.slice(0, Math.min(3, monthsWithIncome.length - 3));
+
+      if (earlierMonths.length > 0) {
+        const recentAvg = recentMonths.reduce((sum, m) => sum + m.totalIncome, 0) / recentMonths.length;
+        const earlierAvg = earlierMonths.reduce((sum, m) => sum + m.totalIncome, 0) / earlierMonths.length;
+
+        const percentChange = ((recentAvg - earlierAvg) / earlierAvg) * 100;
+        growthRate = percentChange;
+
+        if (percentChange > 10) {
+          trend = "increasing";
+        } else if (percentChange < -10) {
+          trend = "decreasing";
+        }
+      }
+    }
+
+    // Make prediction for next month
+    let prediction = averageMonthlyIncome;
+
+    if (trend === "increasing") {
+      // Apply growth rate to prediction
+      prediction = averageMonthlyIncome * (1 + (growthRate / 100));
+    } else if (trend === "decreasing") {
+      // Apply decline rate to prediction
+      prediction = averageMonthlyIncome * (1 + (growthRate / 100));
+    }
+
+    // Determine confidence level
+    let confidence: "low" | "medium" | "high" = "low";
+    if (monthsWithIncome.length >= 6) {
+      confidence = "high";
+    } else if (monthsWithIncome.length >= 3) {
+      confidence = "medium";
+    }
+
+    return {
+      success: true,
+      data: {
+        prediction: Math.max(0, prediction), // Don't predict negative income
+        confidence,
+        averageMonthlyIncome,
+        trend,
+        growthRate,
+        monthsAnalyzed: monthsWithIncome.length,
+        historicalData: monthlyData,
+      },
+    };
+  } catch (error) {
+    return {
+      success: false,
+      message: error,
+    };
+  }
+};
+
+// Get year-to-date income
+export const getYearToDateIncome = async () => {
+  const user: IUser = await readData("user");
+
+  try {
+    const q = query(
+      invoiceRef,
+      where("userId", "==", user.id),
+      orderBy("createdAt", "desc"),
+    );
+
+    const snapshot = await getDocs(q);
+    const invoices: IInvoice[] = [];
+
+    snapshot.forEach((doc) => {
+      invoices.push({ id: doc.id, ...(doc.data() as IInvoice) });
+    });
+
+    const now = new Date();
+    const currentYear = now.getFullYear();
+
+    const paidThisYear = invoices.filter((inv) => {
+      if (inv.status !== "paid") return false;
+
+      const createdAt =
+        inv.createdAt instanceof Date
+          ? inv.createdAt
+          : inv.createdAt?.toDate?.();
+
+      if (!createdAt) return false;
+
+      return createdAt.getFullYear() === currentYear;
+    });
+
+    const totalIncome = paidThisYear.reduce(
+      (sum, inv) => sum + Number(inv.total || 0),
+      0,
+    );
+
+    return {
+      success: true,
+      data: {
+        totalIncome,
+        count: paidThisYear.length,
+        year: currentYear,
+      },
+    };
+  } catch (error) {
+    return {
+      success: false,
+      message: error,
+    };
+  }
+};

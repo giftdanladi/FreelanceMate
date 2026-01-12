@@ -57,7 +57,7 @@ export default function Hero({ invoice, expenses }: IProp) {
           </Text>*/}
           <Link href={"/chat"} asChild>
             <TouchableOpacity className="flex-row gap-1 items-center">
-              <Text className="text-white">Let's Chat</Text>
+              <Text className="text-white">Ask AI</Text>
               <Ionicons name="chatbubbles-outline" size={20} color={"white"} />
             </TouchableOpacity>
           </Link>

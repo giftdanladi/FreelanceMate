@@ -452,7 +452,7 @@ export default function generateInvoiceHTML(data: IInvoice, user: IUser) {
             (item: { name: string; price: number }) => `
                   <tr>
                     <td class="description-cell">${item.name}</td>
-                    <td class="text-right">$${item.price.toFixed(2)}</td>
+                    <td class="text-right">£${item.price.toFixed(2)}</td>
                   </tr>
                 `,
           )
@@ -480,7 +480,7 @@ export default function generateInvoiceHTML(data: IInvoice, user: IUser) {
             <div class="totals-section">
               <div class="total-row grand-total">
                 <span>TOTAL</span>
-                <span>$${total.toFixed(2)}</span>
+                <span>£${total.toFixed(2)}</span>
               </div>
             </div>
 

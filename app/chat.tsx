@@ -9,6 +9,10 @@ import {
   getMonthName,
   getSalesStatsLastMonth,
   getSalesStatsThisMonth,
+  getIncomeByMonth,
+  getIncomeLastNMonths,
+  predictFutureIncome,
+  getYearToDateIncome,
 } from "@/util/firestore";
 import { readData } from "@/util/storage";
 import { Ionicons } from "@expo/vector-icons";
@@ -533,6 +537,352 @@ export default function Chat() {
               response += `Excellent! All your invoices are paid. You're crushing it! 🎉`;
             } else {
               response += `Things are looking good. Keep monitoring those pending invoices.`;
+            }
+          }
+
+          const data = {
+            id: Math.random().toString(),
+            userId: currentUser?.id as string,
+            prompt: prompt,
+            response: response,
+            createdAt: "",
+          };
+
+          setConversations((prev) => [...prev, data]);
+          setResponse(response);
+          await addChat(data);
+          return;
+        }
+      }
+
+      // ============================================
+      // 6. TOTAL INCOME RECEIVED
+      // ============================================
+      const isAskingTotalIncome =
+        ((lowerPrompt.includes("income") || lowerPrompt.includes("revenue") || lowerPrompt.includes("received")) &&
+          (lowerPrompt.includes("total") || lowerPrompt.includes("how much") || lowerPrompt.includes("so far"))) &&
+        !isWritingRequest;
+
+      if (isAskingTotalIncome) {
+        const now = new Date();
+        const salesRes = await getSalesStatsThisMonth();
+
+        if (salesRes.success && salesRes.data) {
+          const { totalSales, count } = salesRes.data;
+
+          const formatted = new Intl.NumberFormat("en-GB", {
+            style: "currency",
+            currency: "GBP",
+            minimumFractionDigits: 2,
+          }).format(totalSales);
+
+          let response = "";
+
+          if (count === 0 || totalSales === 0) {
+            response = "You haven't received any income this month yet. Hopefully some invoices will be paid soon!";
+          } else {
+            const monthName = getMonthName(now.getMonth());
+            response = `So far in ${monthName}, you've received ${formatted} from ${count} paid invoice${count === 1 ? '' : 's'}. `;
+
+            if (totalSales > 5000) {
+              response += "Great month! 💪";
+            } else if (totalSales > 2000) {
+              response += "Keep it going!";
+            }
+          }
+
+          const data = {
+            id: Math.random().toString(),
+            userId: currentUser?.id as string,
+            prompt: prompt,
+            response: response,
+            createdAt: "",
+          };
+
+          setConversations((prev) => [...prev, data]);
+          setResponse(response);
+          await addChat(data);
+          return;
+        }
+      }
+
+      // ============================================
+      // INCOME LAST MONTH / SPECIFIC MONTH
+      // ============================================
+      const isAskingIncomeSpecificMonth =
+        ((lowerPrompt.includes("income") || lowerPrompt.includes("revenue") || lowerPrompt.includes("earned") || lowerPrompt.includes("made")) &&
+          (lowerPrompt.includes("last month") ||
+            lowerPrompt.includes("previous month") ||
+            lowerPrompt.includes("january") || lowerPrompt.includes("february") ||
+            lowerPrompt.includes("march") || lowerPrompt.includes("april") ||
+            lowerPrompt.includes("may") || lowerPrompt.includes("june") ||
+            lowerPrompt.includes("july") || lowerPrompt.includes("august") ||
+            lowerPrompt.includes("september") || lowerPrompt.includes("october") ||
+            lowerPrompt.includes("november") || lowerPrompt.includes("december"))) &&
+        !isWritingRequest;
+
+      if (isAskingIncomeSpecificMonth) {
+        const now = new Date();
+        let targetMonth: number;
+        let targetYear: number;
+
+        // Determine which month they're asking about
+        if (lowerPrompt.includes("last month") || lowerPrompt.includes("previous month")) {
+          const lastMonth = now.getMonth() === 0 ? 11 : now.getMonth() - 1;
+          const lastMonthYear = now.getMonth() === 0 ? now.getFullYear() - 1 : now.getFullYear();
+          targetMonth = lastMonth;
+          targetYear = lastMonthYear;
+        } else {
+          // Parse specific month name
+          const monthNames = ["january", "february", "march", "april", "may", "june",
+            "july", "august", "september", "october", "november", "december"];
+          targetMonth = monthNames.findIndex(m => lowerPrompt.includes(m));
+          targetYear = now.getFullYear();
+
+          // If month hasn't occurred yet this year, assume they mean last year
+          if (targetMonth > now.getMonth()) {
+            targetYear = now.getFullYear() - 1;
+          }
+        }
+
+        const incomeRes = await getIncomeByMonth(targetMonth, targetYear);
+
+        if (incomeRes.success && incomeRes.data) {
+          const { totalIncome, count, month, year } = incomeRes.data;
+
+          const formatted = new Intl.NumberFormat("en-GB", {
+            style: "currency",
+            currency: "GBP",
+            minimumFractionDigits: 2,
+          }).format(totalIncome);
+
+          const monthName = getMonthName(month);
+          let response = "";
+
+          if (count === 0 || totalIncome === 0) {
+            response = `You didn't record any income in ${monthName} ${year}. `;
+            if (month === now.getMonth() - 1 || (month === 11 && now.getMonth() === 0)) {
+              response += "Hopefully this month will be better!";
+            }
+          } else {
+            response = `In ${monthName} ${year}, you earned ${formatted} from ${count} paid invoice${count === 1 ? '' : 's'}. `;
+
+            if (totalIncome > 5000) {
+              response += "That was a great month! 💪";
+            } else if (totalIncome > 2000) {
+              response += "Nice work!";
+            }
+          }
+
+          const data = {
+            id: Math.random().toString(),
+            userId: currentUser?.id as string,
+            prompt: prompt,
+            response: response,
+            createdAt: "",
+          };
+
+          setConversations((prev) => [...prev, data]);
+          setResponse(response);
+          await addChat(data);
+          return;
+        }
+      }
+
+      // ============================================
+      // INCOME HISTORY / LAST N MONTHS
+      // ============================================
+      const isAskingIncomeHistory =
+        ((lowerPrompt.includes("income") || lowerPrompt.includes("revenue") || lowerPrompt.includes("earnings")) &&
+          (lowerPrompt.includes("last") || lowerPrompt.includes("past") || lowerPrompt.includes("history") || lowerPrompt.includes("over time")) &&
+          (lowerPrompt.includes("months") || lowerPrompt.includes("3 months") || lowerPrompt.includes("6 months"))) &&
+        !isWritingRequest;
+
+      if (isAskingIncomeHistory) {
+        // Determine how many months
+        let numberOfMonths = 6; // default
+        if (lowerPrompt.includes("3 months") || lowerPrompt.includes("three months")) {
+          numberOfMonths = 3;
+        } else if (lowerPrompt.includes("12 months") || lowerPrompt.includes("year")) {
+          numberOfMonths = 12;
+        }
+
+        const historyRes = await getIncomeLastNMonths(numberOfMonths);
+
+        if (historyRes.success && historyRes.data) {
+          const monthlyData = historyRes.data;
+
+          let response = `Here's your income over the last ${numberOfMonths} months:\n\n`;
+
+          monthlyData.forEach((month) => {
+            const formatted = new Intl.NumberFormat("en-GB", {
+              style: "currency",
+              currency: "GBP",
+              minimumFractionDigits: 2,
+            }).format(month.totalIncome);
+
+            response += `**${month.monthName} ${month.year}**: ${formatted}`;
+            if (month.count > 0) {
+              response += ` (${month.count} invoice${month.count === 1 ? '' : 's'})`;
+            }
+            response += `\n`;
+          });
+
+          // Calculate total and average
+          const total = monthlyData.reduce((sum, m) => sum + m.totalIncome, 0);
+          const average = total / numberOfMonths;
+
+          const formattedTotal = new Intl.NumberFormat("en-GB", {
+            style: "currency",
+            currency: "GBP",
+            minimumFractionDigits: 2,
+          }).format(total);
+
+          const formattedAvg = new Intl.NumberFormat("en-GB", {
+            style: "currency",
+            currency: "GBP",
+            minimumFractionDigits: 2,
+          }).format(average);
+
+          response += `\n**Total**: ${formattedTotal}\n`;
+          response += `**Average per month**: ${formattedAvg}`;
+
+          const data = {
+            id: Math.random().toString(),
+            userId: currentUser?.id as string,
+            prompt: prompt,
+            response: response,
+            createdAt: "",
+          };
+
+          setConversations((prev) => [...prev, data]);
+          setResponse(response);
+          await addChat(data);
+          return;
+        }
+      }
+
+      // ============================================
+      // INCOME PREDICTION
+      // ============================================
+      const isAskingPrediction =
+        ((lowerPrompt.includes("predict") || lowerPrompt.includes("forecast") ||
+          lowerPrompt.includes("expect") || lowerPrompt.includes("estimate") ||
+          lowerPrompt.includes("will i make") || lowerPrompt.includes("can i make") ||
+          lowerPrompt.includes("how much will i") || lowerPrompt.includes("next month")) &&
+          (lowerPrompt.includes("income") || lowerPrompt.includes("revenue") ||
+            lowerPrompt.includes("earn") || lowerPrompt.includes("make"))) &&
+        !isWritingRequest;
+
+      if (isAskingPrediction) {
+        const predictionRes = await predictFutureIncome();
+
+        if (predictionRes.success && predictionRes.data) {
+          const { prediction, confidence, averageMonthlyIncome, trend, growthRate, monthsAnalyzed = 0 } = predictionRes.data;
+
+          const formatted = new Intl.NumberFormat("en-GB", {
+            style: "currency",
+            currency: "GBP",
+            minimumFractionDigits: 2,
+          }).format(prediction);
+
+          const avgFormatted = new Intl.NumberFormat("en-GB", {
+            style: "currency",
+            currency: "GBP",
+            minimumFractionDigits: 2,
+          }).format(averageMonthlyIncome);
+
+          let response = "";
+
+          if (monthsAnalyzed === 0) {
+            response = "I don't have enough data to make a prediction yet. Start tracking your income, and I'll be able to forecast your future earnings!";
+          } else if (monthsAnalyzed < 3) {
+            response = `Based on your limited income history (${monthsAnalyzed} month${monthsAnalyzed === 1 ? '' : 's'}), I predict you could earn around ${formatted} next month. However, this is a low-confidence prediction. Track more months for better accuracy!`;
+          } else {
+            response = `Based on ${monthsAnalyzed} months of data, I predict you'll earn approximately ${formatted} next month.\n\n`;
+
+            response += `📊 **Analysis**:\n`;
+            response += `• Your average monthly income: ${avgFormatted}\n`;
+
+            if (trend === "increasing") {
+              response += `• Trend: Growing ${Math.abs(growthRate ?? 0).toFixed(1)}% 📈\n`;
+              response += `• Your income is trending upward!\n`;
+            } else if (trend === "decreasing") {
+              response += `• Trend: Declining ${Math.abs(growthRate ?? 0).toFixed(1)}% 📉\n`;
+              response += `• Consider strategies to boost your income.\n`;
+            } else {
+              response += `• Trend: Stable\n`;
+              response += `• Your income is consistent.\n`;
+            }
+
+            response += `• Confidence: ${confidence.charAt(0).toUpperCase() + confidence.slice(1)}\n\n`;
+
+            if (confidence === "high") {
+              response += "This prediction is based on solid historical data!";
+            } else if (confidence === "medium") {
+              response += "Track a few more months for even better predictions!";
+            }
+          }
+
+          const data = {
+            id: Math.random().toString(),
+            userId: currentUser?.id as string,
+            prompt: prompt,
+            response: response,
+            createdAt: "",
+          };
+
+          setConversations((prev) => [...prev, data]);
+          setResponse(response);
+          await addChat(data);
+          return;
+        }
+      }
+
+      // ============================================
+      // YEAR TO DATE INCOME
+      // ============================================
+      const isAskingYTD =
+        ((lowerPrompt.includes("year to date") || lowerPrompt.includes("ytd") ||
+          lowerPrompt.includes("this year") || lowerPrompt.includes("so far this year")) &&
+          (lowerPrompt.includes("income") || lowerPrompt.includes("revenue") || lowerPrompt.includes("earned"))) &&
+        !isWritingRequest;
+
+      if (isAskingYTD) {
+        const ytdRes = await getYearToDateIncome();
+
+        if (ytdRes.success && ytdRes.data) {
+          const { totalIncome, count, year } = ytdRes.data;
+
+          const formatted = new Intl.NumberFormat("en-GB", {
+            style: "currency",
+            currency: "GBP",
+            minimumFractionDigits: 2,
+          }).format(totalIncome);
+
+          let response = "";
+
+          if (count === 0 || totalIncome === 0) {
+            response = `You haven't recorded any income in ${year} yet. Time to get those invoices out there!`;
+          } else {
+            response = `Your year-to-date income for ${year} is ${formatted} from ${count} paid invoice${count === 1 ? '' : 's'}. `;
+
+            const now = new Date();
+            const monthsPassed = now.getMonth() + 1;
+            const averagePerMonth = totalIncome / monthsPassed;
+
+            const avgFormatted = new Intl.NumberFormat("en-GB", {
+              style: "currency",
+              currency: "GBP",
+              minimumFractionDigits: 2,
+            }).format(averagePerMonth);
+
+            response += `That's an average of ${avgFormatted} per month. `;
+
+            if (totalIncome > 50000) {
+              response += "Fantastic year so far! 🎉";
+            } else if (totalIncome > 20000) {
+              response += "You're doing great! Keep it up! 💪";
             }
           }
 

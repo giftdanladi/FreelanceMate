@@ -89,7 +89,7 @@ export default function Page() {
       >
         <View className="flex-row items-center justify-center gap-2 my-10 bg-sky-600 p-4 w-44 rounded-full">
           <Ionicons name="chatbubbles-outline" color={"#f0f9ff"} size={20} />
-          <Text className="text-md text-white font-bold">Chat with AI</Text>
+          <Text className="text-md text-white font-bold">Ask AI</Text>
         </View>
       </TouchableOpacity>
     </>
