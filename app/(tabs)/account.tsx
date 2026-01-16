@@ -1,5 +1,6 @@
 import { IUser } from "@/interface";
 import { FontFamily } from "@/util/FontFamily";
+import { deleteAccount } from "@/util/firestore";
 import { clearStorage, readData } from "@/util/storage";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
@@ -26,6 +27,34 @@ export default function Page() {
         },
       },
     ]);
+  };
+
+  const handleDeleteAccount = async () => {
+    Alert.alert(
+      "Delete Account",
+      "Are you sure? This action cannot be undone.",
+      [
+        {
+          text: "Cancel",
+          style: "cancel",
+        },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: async () => {
+            if (user?.id) {
+              const res = await deleteAccount(user.id);
+              if (res.success) {
+                clearStorage();
+                router.replace("/register");
+              } else {
+                Alert.alert("Error", res.message || "Failed to delete account");
+              }
+            }
+          },
+        },
+      ]
+    );
   };
 
   useEffect(() => {
@@ -82,7 +111,15 @@ export default function Page() {
         <Text className="text-gray-500 text-sm">
           You can update your profile through the settings.
         </Text>
+        <TouchableOpacity
+          className="bg-red-50 p-4 rounded-xl flex-row items-center gap-2 mt-10"
+          onPress={handleDeleteAccount}
+        >
+          <Ionicons name="trash-outline" size={20} color="#ef4444" />
+          <Text className="text-red-500 font-medium">Delete Account</Text>
+        </TouchableOpacity>
       </ScrollView>
+
       <TouchableOpacity
         className="items-end absolute bottom-20 right-5"
         onPress={() => router.navigate("/chat")}

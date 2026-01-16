@@ -3,6 +3,7 @@ import { IExpense, IInvoice, IUser } from "@/interface";
 import {
   addDoc,
   collection,
+  deleteDoc,
   doc,
   getDocs,
   orderBy,
@@ -796,6 +797,23 @@ export const handleUnpaidInvoiceQuery = async (
   return { success: false };
 };
 
+// Add these new functions to your firestore.ts file
+
+export const deleteAccount = async (userId: string) => {
+  try {
+    await deleteDoc(doc(db, "users", userId));
+    return {
+      success: true,
+      message: "Account deleted successfully",
+    };
+  } catch (error: any) {
+    return {
+      success: false,
+      message: error.message,
+    };
+  }
+};
+
 // Get income/sales for a specific month
 export const getIncomeByMonth = async (month: number, year: number) => {
   const user: IUser = await readData("user");
@@ -968,6 +986,7 @@ export const predictFutureIncome = async () => {
           message: "Not enough data to make a prediction. Start tracking your income!",
           averageMonthlyIncome: 0,
           trend: "insufficient_data",
+          monthsAnalyzed: 0,
         },
       };
     }
