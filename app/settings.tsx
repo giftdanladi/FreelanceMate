@@ -8,6 +8,7 @@ import {
   Alert,
   KeyboardAvoidingView,
   Platform,
+  ScrollView,
   StyleSheet,
   Text,
   TextInput,
@@ -61,74 +62,78 @@ export default function Page() {
 
   return (
     <SafeAreaView className="px-3 py-3 h-screen">
-      <KeyboardAvoidingView
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
-        keyboardVerticalOffset={50}
-        className="h-[80%]"
-      >
-        <TextInput
-          className="border-[1px] border-gray-300 mb-3 bg-white rounded-2xl p-5 focus:border-sky-500 font-medium placeholder:text-gray-500"
-          placeholder="Full Name"
-          autoCorrect={false}
-          defaultValue={user?.fullname}
-          editable={true}
-          onChangeText={(e) => setInputs({ ...inputs, fullname: e })}
-        />
-
-        <TextInput
-          className="border-[1px] border-gray-300 mb-3 bg-white rounded-2xl p-5 focus:border-sky-500 font-medium placeholder:text-gray-500"
-          placeholder="Business name"
-          autoCorrect={false}
-          defaultValue={user?.business}
-          editable={true}
-          onChangeText={(e) => setInputs({ ...inputs, business: e })}
-        />
-
-        <TextInput
-          className="border-[1px] border-gray-300 mb-3 bg-white rounded-2xl p-5 focus:border-sky-500 font-medium placeholder:text-gray-500"
-          placeholder="Contact phone"
-          autoCorrect={false}
-          defaultValue={user?.contactPhone}
-          editable={true}
-          onChangeText={(e) => setInputs({ ...inputs, contactPhone: e })}
-        />
-
-        <TextInput
-          className="border-[1px] border-gray-300 mb-3 bg-white rounded-2xl p-5 focus:border-sky-500 font-medium placeholder:text-gray-500"
-          placeholder="Email Address"
-          autoCapitalize="none"
-          keyboardType="email-address"
-          autoCorrect={false}
-          defaultValue={user?.email}
-          onChangeText={(e) => setInputs({ ...inputs, email: e })}
-        />
-
-        <TextInput
-          className="border-[1px] border-gray-300 mb-3 bg-white rounded-2xl p-5 focus:border-sky-500 font-medium placeholder:text-gray-500 h-40"
-          placeholder="Contact address"
-          defaultValue={user?.contactAddress}
-          onChangeText={(e) => setInputs({ ...inputs, contactAddress: e })}
-          editable={true}
-          multiline
-        />
-
-        <TouchableOpacity
-          className="w-96 bg-sky-600 p-5 items-center rounded-2xl absolute bottom-0 justify-center ml-8"
-          style={styles.glassContainer}
-          onPress={handleSubmit}
+      <ScrollView className="h-screen" showsVerticalScrollIndicator={false} contentContainerStyle={{ minHeight: "100%" }}>
+        <KeyboardAvoidingView
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
+          keyboardVerticalOffset={50}
+        // className="h-[80%]"
         >
-          {loading ? (
-            <View className="flex-row gap-2">
-              <ActivityIndicator />
-              <Text className="text-sky-600 text-lg font-medium">
-                Updating...
-              </Text>
-            </View>
-          ) : (
-            <Text className="text-sky-600 text-lg font-bold">Update profile</Text>
-          )}
-        </TouchableOpacity>
-      </KeyboardAvoidingView>
+          <TextInput
+            className="border-[1px] border-gray-300 mb-3 bg-white rounded-2xl p-5 focus:border-sky-500 font-medium placeholder:text-gray-500"
+            placeholder="Full Name"
+            autoCorrect={false}
+            defaultValue={user?.fullname}
+            editable={true}
+            onChangeText={(e) => setInputs({ ...inputs, fullname: e })}
+          />
+
+          <TextInput
+            className="border-[1px] border-gray-300 mb-3 bg-white rounded-2xl p-5 focus:border-sky-500 font-medium placeholder:text-gray-500"
+            placeholder="Business name"
+            autoCorrect={false}
+            defaultValue={user?.business}
+            editable={true}
+            onChangeText={(e) => setInputs({ ...inputs, business: e })}
+          />
+
+          <TextInput
+            className="border-[1px] border-gray-300 mb-3 bg-white rounded-2xl p-5 focus:border-sky-500 font-medium placeholder:text-gray-500"
+            placeholder="Contact phone"
+            autoCorrect={false}
+            defaultValue={user?.contactPhone}
+            editable={true}
+            onChangeText={(e) => setInputs({ ...inputs, contactPhone: e })}
+          />
+
+          <TextInput
+            className="border-[1px] border-gray-300 mb-3 bg-white rounded-2xl p-5 focus:border-sky-500 font-medium placeholder:text-gray-500"
+            placeholder="Email Address"
+            autoCapitalize="none"
+            keyboardType="email-address"
+            autoCorrect={false}
+            defaultValue={user?.email}
+            onChangeText={(e) => setInputs({ ...inputs, email: e })}
+          />
+
+          <TextInput
+            className="border-[1px] border-gray-300 mb-3 bg-white rounded-2xl p-5 focus:border-sky-500 font-medium placeholder:text-gray-500 h-40"
+            placeholder="Contact address"
+            defaultValue={user?.contactAddress}
+            onChangeText={(e) => setInputs({ ...inputs, contactAddress: e })}
+            editable={true}
+            returnKeyType="done"
+            textAlignVertical="top"
+            multiline
+          />
+
+          <TouchableOpacity
+            className="w-full bg-sky-600 p-5 items-center rounded-2xl justify-center mt-80"
+            style={styles.glassContainer}
+            onPress={handleSubmit}
+          >
+            {loading ? (
+              <View className="flex-row gap-2">
+                <ActivityIndicator />
+                <Text className="text-sky-600 text-lg font-medium">
+                  Updating...
+                </Text>
+              </View>
+            ) : (
+              <Text className="text-sky-600 text-lg font-bold">Update profile</Text>
+            )}
+          </TouchableOpacity>
+        </KeyboardAvoidingView>
+      </ScrollView>
     </SafeAreaView>
   );
 }
