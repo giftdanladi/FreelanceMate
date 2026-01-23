@@ -2,7 +2,7 @@
   "expo": {
     "name": "FreelanceMate",
     "slug": "freelanceMate",
-    "version": "1.0.8",
+    "version": "1.0.9",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "freelancemate",
@@ -16,7 +16,7 @@
       }
     },
     "android": {
-      "versionCode": 8,
+      "versionCode": 9,
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
