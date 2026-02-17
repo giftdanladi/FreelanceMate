@@ -4,15 +4,15 @@ import {
   getAllConversations,
   getDetailedInvoiceContext,
   getExpenseStats,
+  getIncomeByMonth,
+  getIncomeLastNMonths,
   getInvoiceStats,
   getInvoiceStatsByMonth,
   getMonthName,
   getSalesStatsLastMonth,
   getSalesStatsThisMonth,
-  getIncomeByMonth,
-  getIncomeLastNMonths,
-  predictFutureIncome,
   getYearToDateIncome,
+  predictFutureIncome,
 } from "@/util/firestore";
 import { readData } from "@/util/storage";
 import { Ionicons } from "@expo/vector-icons";
@@ -537,57 +537,6 @@ export default function Chat() {
               response += `Excellent! All your invoices are paid. You're crushing it! 🎉`;
             } else {
               response += `Things are looking good. Keep monitoring those pending invoices.`;
-            }
-          }
-
-          const data = {
-            id: Math.random().toString(),
-            userId: currentUser?.id as string,
-            prompt: prompt,
-            response: response,
-            createdAt: "",
-          };
-
-          setConversations((prev) => [...prev, data]);
-          setResponse(response);
-          await addChat(data);
-          return;
-        }
-      }
-
-      // ============================================
-      // 6. TOTAL INCOME RECEIVED
-      // ============================================
-      const isAskingTotalIncome =
-        ((lowerPrompt.includes("income") || lowerPrompt.includes("revenue") || lowerPrompt.includes("received")) &&
-          (lowerPrompt.includes("total") || lowerPrompt.includes("how much") || lowerPrompt.includes("so far"))) &&
-        !isWritingRequest;
-
-      if (isAskingTotalIncome) {
-        const now = new Date();
-        const salesRes = await getSalesStatsThisMonth();
-
-        if (salesRes.success && salesRes.data) {
-          const { totalSales, count } = salesRes.data;
-
-          const formatted = new Intl.NumberFormat("en-GB", {
-            style: "currency",
-            currency: "GBP",
-            minimumFractionDigits: 2,
-          }).format(totalSales);
-
-          let response = "";
-
-          if (count === 0 || totalSales === 0) {
-            response = "You haven't received any income this month yet. Hopefully some invoices will be paid soon!";
-          } else {
-            const monthName = getMonthName(now.getMonth());
-            response = `So far in ${monthName}, you've received ${formatted} from ${count} paid invoice${count === 1 ? '' : 's'}. `;
-
-            if (totalSales > 5000) {
-              response += "Great month! 💪";
-            } else if (totalSales > 2000) {
-              response += "Keep it going!";
             }
           }
 

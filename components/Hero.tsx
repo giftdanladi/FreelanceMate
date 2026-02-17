@@ -85,7 +85,7 @@ export default function Hero({ invoice, expenses }: IProp) {
             <Text className="text-white">Income</Text>
           </View>
 
-          <Link href="/overdue" className="flex-col items-center" asChild>
+          <Link href={"/overdue"} className="flex-col items-center" asChild>
             <TouchableOpacity>
               <Text
                 className="font-bold text-3xl text-white"

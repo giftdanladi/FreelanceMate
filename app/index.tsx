@@ -1,22 +1,22 @@
+import { loginUser, requestResetCode, verifyAndResetPassword } from "@/util/firestore";
+import { readData, storeData } from "@/util/storage";
+import { Image } from "expo-image";
+import { useRouter } from "expo-router";
+import { useEffect, useState } from "react";
 import {
+  ActivityIndicator,
   Alert,
+  KeyboardAvoidingView,
+  Platform,
   Pressable,
   ScrollView,
+  StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
   View,
-  StyleSheet,
-  ActivityIndicator,
-  KeyboardAvoidingView,
-  Platform,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Image } from "expo-image";
-import { useEffect, useState } from "react";
-import { loginUser } from "@/util/firestore";
-import { useRouter } from "expo-router";
-import { readData, storeData } from "@/util/storage";
 
 export default function Page() {
   const [inputs, setInputs] = useState<Record<any, any>>({});
@@ -37,11 +37,71 @@ export default function Page() {
       } else {
         Alert.alert("Notification", res.message as string);
       }
-    } catch (error: any) {
-      Alert.alert("Notification", `Server error! ${error}`);
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleForgotPassword = () => {
+    Alert.prompt(
+      "Reset Password",
+      "Enter your email address:",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Send Code",
+          onPress: async (email: string | undefined) => {
+            if (!email) return Alert.alert("Error", "Email is required");
+
+            setLoading(true);
+            const res = await requestResetCode(email);
+            setLoading(false);
+
+            if (res.success) {
+              Alert.prompt(
+                "Verify Code",
+                "Enter the 6-digit code sent to your email:",
+                [
+                  { text: "Cancel", style: "cancel" },
+                  {
+                    text: "Next",
+                    onPress: (code: string | undefined) => {
+                      if (!code) return Alert.alert("Error", "Code is required");
+
+                      Alert.prompt(
+                        "New Password",
+                        "Enter your new password:",
+                        [
+                          { text: "Cancel", style: "cancel" },
+                          {
+                            text: "Reset Password",
+                            onPress: async (newPassword: string | undefined) => {
+                              if (!newPassword) return Alert.alert("Error", "Password is required");
+
+                              setLoading(true);
+                              const resetRes = await verifyAndResetPassword(email, code, newPassword);
+                              setLoading(false);
+
+                              Alert.alert("Notification", resetRes.message);
+                              console.log(resetRes.message as string)
+                            }
+                          }
+                        ],
+                        "secure-text"
+                      );
+                    }
+                  }
+                ],
+                "plain-text"
+              );
+            } else {
+              Alert.alert("Error", res.message);
+            }
+          },
+        },
+      ],
+      "plain-text"
+    );
   };
 
   useEffect(() => {
@@ -92,6 +152,13 @@ export default function Page() {
             onChangeText={(e) => setInputs({ ...inputs, password: e })}
             keyboardType="default"
           />
+
+          <TouchableOpacity
+            className="flex-row items-center justify-end px-2 mb-5"
+            onPress={handleForgotPassword}
+          >
+            <Text className="text-sky-600 font-medium">Forgot Password?</Text>
+          </TouchableOpacity>
 
           <TouchableOpacity
             className="w-full bg-sky-600 p-5 mt-10 items-center rounded-2xl"

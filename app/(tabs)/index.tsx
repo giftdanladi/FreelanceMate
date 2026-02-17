@@ -1,19 +1,19 @@
 import Invoice from "@/components/Invoice";
+import { IExpense, IInvoice } from "@/interface";
+import { getAllExpenses, getAllInvoice } from "@/util/firestore";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
+import { useCallback, useEffect, useState } from "react";
 import {
   Alert,
   FlatList,
+  RefreshControl,
   Text,
   TouchableOpacity,
   View,
-  RefreshControl,
 } from "react-native";
 import Hero from "../../components/Hero";
-import { useCallback, useEffect, useState } from "react";
-import { IExpense, IInvoice } from "@/interface";
-import { getAllExpenses, getAllInvoice } from "@/util/firestore";
 
 export default function Page() {
   const [invoices, setInvoices] = useState<IInvoice[]>([]);
@@ -71,7 +71,9 @@ export default function Page() {
       <Hero invoice={invoices} expenses={expenses} />
       <FlatList
         data={invoices}
-        renderItem={({ item }) => <Invoice data={item} />}
+        renderItem={({ item }) => (
+          <Invoice data={item} onDelete={fetchInvoice} />
+        )}
         className="px-5 mt-5 flex-1"
         ListEmptyComponent={
           <Text className="text-center my-5">No invoice yet</Text>

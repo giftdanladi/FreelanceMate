@@ -4,9 +4,10 @@ import * as Print from "expo-print";
 import { useLocalSearchParams } from "expo-router";
 // import FileSystem from "expo-file-system";
 import { IInvoice, IUser } from "@/interface";
-import { updateInvoiceStatus } from "@/util/firestore";
+import { deleteInvoice, updateInvoiceStatus } from "@/util/firestore";
 import generateInvoiceHTML from "@/util/GenerateInvoiceHTML";
 import { readData } from "@/util/storage";
+import { useRouter } from "expo-router";
 import { shareAsync } from "expo-sharing";
 import moment from "moment";
 import { useEffect, useState } from "react";
@@ -25,6 +26,7 @@ export default function Summary() {
   const client: IInvoice = JSON.parse(data);
   const [user, setUser] = useState<IUser>();
   const [loading, setLoading] = useState<boolean>(false);
+  const router = useRouter();
 
   const printInvoice = async () => {
     setLoading(true);
@@ -74,6 +76,26 @@ export default function Summary() {
     ]);
   };
 
+  const handleDelete = () => {
+    Alert.alert("Confirmation", "Are you sure you want to delete this invoice?", [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Delete",
+        style: "destructive",
+        onPress: async () => {
+          setLoading(true);
+          const res = await deleteInvoice(client.id as string);
+          setLoading(false);
+          if (res.success) {
+            router.back();
+          } else {
+            Alert.alert("Error", res.message as string);
+          }
+        },
+      },
+    ]);
+  };
+
   useEffect(() => {
     const fetchUser = async () => {
       const user = await readData("user");
@@ -88,6 +110,7 @@ export default function Summary() {
 
   return (
     <ScrollView contentContainerStyle={{ paddingBottom: 50 }}>
+      {/* ... previous content ... */}
       <View className="flex-row ml-5 mt-5 gap-3 items-center">
         <Ionicons name="receipt-outline" size={30} />
         <Text className="font-bold text-2xl">{client.invoiceNumber}</Text>
@@ -203,19 +226,9 @@ export default function Summary() {
             className="text-sky-100 font-medium"
             style={{ fontFamily: FontFamily.bricolage }}
           >
-            Change status
+            Status
           </Text>
         </TouchableOpacity>
-
-        {/*<TouchableOpacity className="bg-red-500 px-7 py-5 rounded-l-full flex-row items-center gap-2">
-          <Ionicons name="close-circle-outline" size={20} color={"white"} />
-          <Text
-            className="text-red-100 font-medium"
-            style={{ fontFamily: FontFamily.bricolage }}
-          >
-            Mark unpaid
-          </Text>
-        </TouchableOpacity>*/}
 
         <TouchableOpacity
           className="bg-slate-700 px-7 py-5 rounded-r-full flex-row items-center gap-2 flex-grow justify-center"
@@ -230,6 +243,18 @@ export default function Summary() {
           </Text>
         </TouchableOpacity>
       </View>
+      <TouchableOpacity
+        className="bg-red-500 px-7 py-5 flex-row items-center justify-center gap-2 mx-5 mt-4 rounded-full"
+        onPress={handleDelete}
+      >
+        <Ionicons name="trash-outline" size={20} color={"white"} />
+        <Text
+          className="text-red-100 font-medium"
+          style={{ fontFamily: FontFamily.bricolage }}
+        >
+          Delete
+        </Text>
+      </TouchableOpacity>
     </ScrollView>
   );
 }

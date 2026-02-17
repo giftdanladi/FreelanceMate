@@ -117,7 +117,7 @@ export default function Page() {
           />
 
           <TouchableOpacity
-            className="w-full bg-sky-600 p-5 items-center rounded-2xl justify-center mt-80"
+            className="w-full bg-sky-600 p-5 items-center rounded-2xl justify-center mt-10"
             style={styles.glassContainer}
             onPress={handleSubmit}
           >

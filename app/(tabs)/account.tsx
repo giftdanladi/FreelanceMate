@@ -95,7 +95,7 @@ export default function Page() {
           </View>
           <Text className="text-md text-black">{user?.business}</Text>
         </View>
-  
+
         <View className="mb-3 bg-white p-3 rounded-2xl">
           <Text className="text-lg text-sky-600">Contact details</Text>
           <Text className="text-md text-black mb-1">{user?.email}</Text>

@@ -6,18 +6,22 @@ import {
   deleteDoc,
   doc,
   getDocs,
+  limit,
   orderBy,
   query,
   serverTimestamp,
+  Timestamp,
   updateDoc,
   where
 } from "firebase/firestore";
+import { sendResetEmail } from "./email";
 import { readData } from "./storage";
 
 const invoiceRef = collection(db, "invoices");
 const expenseRef = collection(db, "expenses");
 const usersRef = collection(db, "users");
 const chatRef = collection(db, "chats");
+const resetRef = collection(db, "password_resets");
 
 export const loginUser = async (user: any) => {
   try {
@@ -48,6 +52,89 @@ export const loginUser = async (user: any) => {
       success: false,
       message: error,
     };
+  }
+};
+
+export const requestResetCode = async (email: string) => {
+  try {
+    const q = query(usersRef, where("email", "==", email), limit(1));
+    const querySnapshot = await getDocs(q);
+
+    if (querySnapshot.empty) {
+      return { success: false, message: "No account found with this email." };
+    }
+
+    // Generate 6-digit code
+    const code = Math.floor(100000 + Math.random() * 900000).toString();
+    const expiresAt = new Date(Date.now() + 15 * 60 * 1000); // 15 mins expiry
+
+    await addDoc(resetRef, {
+      email,
+      code,
+      expiresAt: Timestamp.fromDate(expiresAt),
+      createdAt: serverTimestamp(),
+    });
+
+    const emailSent = await sendResetEmail(email, code);
+
+    return {
+      success: true,
+      message: emailSent
+        ? "Verification code sent to your email."
+        : "Failed to send email, but code generated. (Check console)",
+    };
+  } catch (error: any) {
+    return { success: false, message: error.message };
+  }
+};
+
+export const verifyAndResetPassword = async (
+  email: string,
+  code: string,
+  newPassword: string
+) => {
+  try {
+    const q = query(
+      resetRef,
+      where("email", "==", email),
+      where("code", "==", code),
+      orderBy("createdAt", "desc"),
+      limit(1)
+    );
+    const querySnapshot = await getDocs(q);
+
+    if (querySnapshot.empty) {
+      return { success: false, message: "Invalid verification code." };
+    }
+
+    const resetDoc = querySnapshot.docs[0];
+    const data = resetDoc.data();
+
+    // Check expiry
+    if (data.expiresAt.toDate() < new Date()) {
+      return { success: false, message: "Reset code has expired." };
+    }
+
+    // Update user password
+    const userQ = query(usersRef, where("email", "==", email), limit(1));
+    const userSnapshot = await getDocs(userQ);
+
+    if (!userSnapshot.empty) {
+      const userDocRef = doc(db, "users", userSnapshot.docs[0].id);
+      await updateDoc(userDocRef, {
+        password: newPassword,
+        updatedAt: serverTimestamp(),
+      });
+
+      // Cleanup code
+      await deleteDoc(doc(db, "password_resets", resetDoc.id));
+
+      return { success: true, message: "Password reset successful!" };
+    }
+
+    return { success: false, message: "User not found." };
+  } catch (error: any) {
+    return { success: false, message: error.message };
   }
 };
 
@@ -174,6 +261,22 @@ export const addInvoice = async (data: any) => {
     };
   } catch (error: any) {
     console.error("Error adding invoice: ", error.message);
+    return {
+      success: false,
+      message: error.message,
+    };
+  }
+};
+
+export const deleteInvoice = async (id: string) => {
+  try {
+    await deleteDoc(doc(db, "invoices", id));
+    return {
+      success: true,
+      message: `Invoice deleted successfully.`,
+    };
+  } catch (error: any) {
+    console.error("Error deleting invoice: ", error.message);
     return {
       success: false,
       message: error.message,
